@@ -1,0 +1,15 @@
+_BASE_: "./ti_frcnn_C4Side_prw_llr_16-8.yaml"
+REID_HEAD:
+  INIT_WEIGHT: "Data/model_zoo/bot_r50-f2_prw_d2.pkl"
+  TRAIN_WITH_DET: False
+  BOX_AUGMENTATION:
+    ENABLE: True
+    NAME: "dn_detr"
+    H_CENTER: 0.4
+    H_SCALE: 0.2
+    NUM_LABELED: 5
+    APPEND_GT: True
+    NUM_UNLABLED: 5
+SOLVER:
+  BASE_LR: 0.0003
+OUTPUT_DIR: "outputs/tips/tircnn-c4side_16-8_prw_03lr_dnboxa_botinit_03lr"

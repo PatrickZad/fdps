@@ -1,0 +1,9 @@
+_BASE_: "ti_retina_baseline.yaml"
+MODEL:
+  META_ARCHITECTURE: "TiFcos_Baseline"
+  BACKBONE:
+    NAME: "build_fcos_resnet_fpn_backbone"
+  RETINANET: # fcos_head  inherits retina_head
+    NORM: "GN"
+    SCORE_THRESH_TEST: 0.2
+    NMS_THRESH_TEST: 0.6

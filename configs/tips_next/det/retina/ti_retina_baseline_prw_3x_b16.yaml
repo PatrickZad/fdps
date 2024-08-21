@@ -1,0 +1,12 @@
+_BASE_: "./ti_retina_baseline.yaml"
+DATASETS:
+  TRAIN: ("PRW_Train",) 
+  TEST: ("PRW_Gallery", ) #
+SOLVER:
+  MAX_ITER: 12853 # 357 * 36+1
+  STEPS: (8568,11781) # 24,33
+  CHECKPOINT_PERIOD: 714
+  IMS_PER_BATCH: 16
+TEST:
+  EVAL_PERIOD: 714
+OUTPUT_DIR: "outputs/tips/prw_tiretina_3x_b16"

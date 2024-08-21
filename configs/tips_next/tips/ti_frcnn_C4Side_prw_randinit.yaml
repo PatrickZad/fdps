@@ -1,0 +1,4 @@
+_BASE_: "./ti_frcnn_C4Side_prw.yaml"
+REID_HEAD:
+  INIT_WEIGHT: ""
+OUTPUT_DIR: "outputs/tips/tircnn-c4side_24-12_prw_randinit"

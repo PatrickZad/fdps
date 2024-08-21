@@ -1,0 +1,12 @@
+_BASE_: "./ti_frcnn_C4Side_cuhk_llr_16-8.yaml"
+MODEL:
+  META_ARCHITECTURE: "TiRCNN_C4Coupled"
+  WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
+REID_HEAD:
+  LOSS:
+    OIM:
+      LB_FACTOR: 10
+      ULB_FACTOR: 10
+TEST:
+  EVAL_PERIOD: 2242
+OUTPUT_DIR: "outputs/tips/tircnn-c4coupled_16-8_cuhk_1llr_10e"

@@ -1,0 +1,46 @@
+_BASE_: "./ti_frcnn_C4Side_prw_llr_16-8.yaml"
+MODEL:
+  META_ARCHITECTURE: "TiRCNN_NextC4Side2StreamOnCropsOimOnlineConReFlip"
+  WEIGHTS: "outputs/tips/lite_side/prw_tircnn_next_16x8/model_0017799.pth"
+  BACKBONE:
+    NAME: "convnext_tiny_half"
+    FREEZE_AT: 1
+  CONV_NEXT:
+    OUT_FEATURES: ["stage1_unorm","stage2_unorm","stage3_unorm"]
+    LAST_STRIDE: True
+    PRETRAINED: True
+    IN_22K: True
+    CHECKPOINT_AT: 3
+  RPN:
+    IN_FEATURES: ["stage3_unorm"]
+  ROI_HEADS:
+    IN_FEATURES: ["stage3_unorm"]
+    IOU_THRESHOLDS: [0.5,]
+    IOU_LABELS: [0, 1]
+  ROI_BOX_HEAD:
+    SMOOTH_L1_BETA: 1.0
+REID_HEAD:
+  POOL_LAYER: "gempoolP"
+  TRAIN_WITH_DET: False
+  USE_CHECKPOINT: True
+  PERSON_FEATURE:
+    DIM: 768
+  BOX_AUGMENTATION:
+    ENABLE: True
+    NAME: "dn_detr"
+    H_CENTER: 0.4
+    H_SCALE: 0.2
+    NUM_LABELED: 9
+    APPEND_GT: True
+    NUM_UNLABLED: 9
+CWS: True
+SOLVER:
+  MAX_ITER: 34231 # 1141 * 30 +1
+  STEPS: (10269,) # 
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 5
+  CHECKPOINT_PERIOD: 1141
+  WARMUP_ITERS: 1141
+TEST:
+  EVAL_PERIOD: 1141
+OUTPUT_DIR: "outputs/tips/lite_side/lite_tircnn-nextc4side2streamOnCropOimOnlineConReFlip_16-8_prw_1llr_12e_gem_dnboxa-10_mstp"

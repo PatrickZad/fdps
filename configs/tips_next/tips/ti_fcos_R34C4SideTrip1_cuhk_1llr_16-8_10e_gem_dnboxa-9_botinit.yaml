@@ -1,0 +1,32 @@
+_BASE_: "./ti_fcos_C4Side_cuhk_llr_16-8.yaml"
+MODEL:
+  META_ARCHITECTURE: "TiFcos_R34C4SideTrip1"
+  WEIGHTS: "outputs/tips/det/cuhk_fcos_3x_b16_r34/model_0013999.pth"
+  RESNETS:
+    DEPTH: 34
+    NORM: "FrozenBN"
+    RES2_OUT_CHANNELS: 64
+REID_HEAD:
+  POOL_LAYER: "gempoolP"
+  INIT_WEIGHT: "Data/model_zoo/bot_r34-f2_cuhk_d2.pkl"
+  TRAIN_WITH_DET: False
+  BOX_AUGMENTATION:
+    ENABLE: True
+    NAME: "dn_detr"
+    H_CENTER: 0.4
+    H_SCALE: 0.2
+    NUM_LABELED: 9
+    APPEND_GT: True
+    NUM_UNLABLED: 9
+  PERSON_FEATURE:
+    DIM: 512
+SOLVER:
+  MAX_ITER: 67261 # 2242 * 30 +1
+  STEPS: (22420,)
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 5
+  CHECKPOINT_PERIOD: 2242
+  WARMUP_ITERS: 2242
+TEST:
+  EVAL_PERIOD: 2242
+OUTPUT_DIR: "outputs/tips/tifcos-r34c4sidetrip1_16-8_cuhk_1llr_10e_gem_dnboxa-10_botinit"

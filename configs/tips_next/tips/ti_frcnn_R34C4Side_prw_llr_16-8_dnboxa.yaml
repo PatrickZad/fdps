@@ -1,0 +1,13 @@
+_BASE_: "./ti_frcnn_R34C4Side_prw_llr_16-8.yaml"
+
+REID_HEAD:
+  TRAIN_WITH_DET: False
+  BOX_AUGMENTATION:
+    ENABLE: True
+    NAME: "dn_detr"
+    H_CENTER: 0.4
+    H_SCALE: 0.2
+    NUM_LABELED: 5
+    APPEND_GT: True
+    NUM_UNLABLED: 5
+OUTPUT_DIR: "outputs/tips/tircnn-r34c4side_16-8_prw_llr_dnboxa"

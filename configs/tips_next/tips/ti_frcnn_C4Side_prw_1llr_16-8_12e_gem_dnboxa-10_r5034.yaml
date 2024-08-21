@@ -1,0 +1,32 @@
+_BASE_: "./ti_frcnn_C4Side_prw_llr_16-8.yaml"
+MODEL:
+  META_ARCHITECTURE: "TiRCNN_R50C4Ladder3"
+  BACKBONE:
+    NAME: "build_resnet5034_backbone"
+  RESNETS:
+    DEPTH: 34
+    NORM: "FrozenBN"
+    RES2_OUT_CHANNELS: 64
+  WEIGHTS: "outputs/tips/det/prw_tircnn_16x8_r5034_long/model_0027093.pth"
+REID_HEAD:
+  POOL_LAYER: "gempoolP"
+  TRAIN_WITH_DET: False
+  INIT_WEIGHT: "Data/model_zoo/tvR-50.pkl"
+  BOX_AUGMENTATION:
+    ENABLE: True
+    NAME: "dn_detr"
+    H_CENTER: 0.4
+    H_SCALE: 0.2
+    NUM_LABELED: 9
+    APPEND_GT: True
+    NUM_UNLABLED: 9
+SOLVER:
+  MAX_ITER: 34231 # 1141 * 30 +1
+  STEPS: (13692,) # 
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 5
+  CHECKPOINT_PERIOD: 1141
+  WARMUP_ITERS: 1141
+TEST:
+  EVAL_PERIOD: 1141
+OUTPUT_DIR: "outputs/tips/tircnn-c4side_16-8_prw_1llr_12e_gem_dnboxa-10_r5034"

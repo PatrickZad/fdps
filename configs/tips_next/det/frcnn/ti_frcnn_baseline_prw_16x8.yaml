@@ -1,0 +1,5 @@
+_BASE_: "./ti_frcnn_baseline_prw.yaml"
+MODEL:
+  ROI_BOX_HEAD:
+      POOLER_RESOLUTION: [16, 8]
+OUTPUT_DIR: "outputs/tips/prw_tircnn_16x8"

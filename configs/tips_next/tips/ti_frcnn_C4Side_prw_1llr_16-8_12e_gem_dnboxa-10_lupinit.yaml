@@ -1,0 +1,25 @@
+_BASE_: "./ti_frcnn_C4Side_prw_llr_16-8.yaml"
+MODEL:
+  WEIGHTS: "outputs/tips/prw_tircnn_16x8/model_final.pth"
+REID_HEAD:
+  POOL_LAYER: "gempoolP"
+  INIT_WEIGHT: "Data/model_zoo/lup_r50-f2_d2.pkl"
+  TRAIN_WITH_DET: False
+  BOX_AUGMENTATION:
+    ENABLE: True
+    NAME: "dn_detr"
+    H_CENTER: 0.4
+    H_SCALE: 0.2
+    NUM_LABELED: 9
+    APPEND_GT: True
+    NUM_UNLABLED: 9
+SOLVER:
+  MAX_ITER: 57051 # 1141 * 50 +1
+  STEPS: (13692,33089) # 
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 5
+  CHECKPOINT_PERIOD: 1141
+  WARMUP_ITERS: 1141
+TEST:
+  EVAL_PERIOD: 1141
+OUTPUT_DIR: "outputs/tips/tircnn-c4side_16-8_prw_1llr_12e_gem_dnboxa-10_lupinit"

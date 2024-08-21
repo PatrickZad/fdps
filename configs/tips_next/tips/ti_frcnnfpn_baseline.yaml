@@ -1,0 +1,30 @@
+_BASE_: "ti_frcnn_baseline.yaml"
+MODEL:
+  META_ARCHITECTURE: "TiRCNNFPN_Baseline"
+  BACKBONE:
+    NAME: "build_resnet_fpn_backbone"
+  RESNETS:
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
+  FPN:
+    IN_FEATURES: ["res2", "res3", "res4", "res5"]
+    OUT_CHANNELS: 256
+    NORM: ""
+    FUSE_TYPE: "sum"
+  ANCHOR_GENERATOR:
+    SIZES: [[32], [64], [128], [256], [512]] # One size for each in feature map
+    ASPECT_RATIOS: [[0.5, 1.0, 2.0]]
+  RPN:
+    IN_FEATURES: ["p2", "p3", "p4", "p5", "p6"]
+    PRE_NMS_TOPK_TRAIN: 2000 # Per FPN level
+    PRE_NMS_TOPK_TEST: 1000 # Per FPN level
+    POST_NMS_TOPK_TRAIN: 1000
+    POST_NMS_TOPK_TEST: 300
+  ROI_HEADS:
+    NAME: "StandardROIHeads"
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+  ROI_BOX_HEAD:
+      NAME: "FastRCNNConvFCHead"
+      NUM_FC: 2
+      POOLER_RESOLUTION: [24,12]
+SOLVER:
+  BASE_LR: 0.003

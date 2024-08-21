@@ -1,0 +1,32 @@
+_BASE_: "./ti_frcnn_C4Side_cuhk_llr_16-8.yaml"
+MODEL:
+  META_ARCHITECTURE: "TiRCNN_R50C4Ladder3"
+  BACKBONE:
+    NAME: "build_resnet5034_backbone"
+  RESNETS:
+    DEPTH: 34
+    NORM: "FrozenBN"
+    RES2_OUT_CHANNELS: 64
+  WEIGHTS: "outputs/tips/det/cuhk_tircnn_16x8_r5034_long2/model_0050399.pth"
+REID_HEAD:
+  POOL_LAYER: "gempoolP"
+  TRAIN_WITH_DET: False
+  INIT_WEIGHT: "Data/model_zoo/bot_r50-f2_cuhk_d2.pkl"
+  BOX_AUGMENTATION:
+    ENABLE: True
+    NAME: "dn_detr"
+    H_CENTER: 0.4
+    H_SCALE: 0.2
+    NUM_LABELED: 8
+    APPEND_GT: True
+    NUM_UNLABLED: 8
+SOLVER:
+  MAX_ITER: 67261 # 2242 * 30 +1
+  STEPS: (22420,)
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 5
+  CHECKPOINT_PERIOD: 2242
+  WARMUP_ITERS: 2242
+TEST:
+  EVAL_PERIOD: 2242
+OUTPUT_DIR: "outputs/tips/tircnn-c4side_16-8_cuhk_1llr_10e_gem_dnboxa-9_r5034_botinit3"

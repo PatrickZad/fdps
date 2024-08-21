@@ -1,0 +1,16 @@
+_BASE_: "./ti_retina_baseline.yaml"
+MODEL:
+  BACKBONE:
+    NAME: "build_retinanet_resnet_fpn_backbone_half"
+DATASETS:
+  TRAIN: ("CUHK-SYSU_Train",) 
+  TEST: ("CUHK-SYSU_Gallery", ) #
+SOLVER:
+  MAX_ITER: 25201 # 700 * 36+1
+  STEPS: (16800,23100)
+  CHECKPOINT_PERIOD: 1400
+  IMS_PER_BATCH: 16
+  BASE_LR: 0.01
+TEST:
+  EVAL_PERIOD: 1400
+OUTPUT_DIR: "outputs/tips/lite_side/cuhk_tiretina_3x_b16_h50"

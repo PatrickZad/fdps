@@ -158,117 +158,6 @@ class DDETR_Baseline(SearchBase):
             gt_instances,
         )
 
-    def prepare_targets(self, input_batches):
-        targets = []
-        # NOTE add image tensor for further visualization
-        for bi, (fname, imgid, bboxes, ids, aug_hw) in enumerate(
-            zip(*input_batches[1:6])
-        ):
-            targets.append(
-                {
-                    "file_name": fname,
-                    "image_t": (input_batches[0].tensors)[bi],
-                    "image_id": imgid,
-                    "boxes": bboxes,
-                    "ids": ids,
-                    "labels": torch.zeros(bboxes.shape[0], dtype=torch.long).to(
-                        self.device
-                    ),
-                    "aug_whwh": bboxes.new_tensor(((aug_hw[1], aug_hw[0]) * 2,)),
-                }
-            )
-        return targets
-
-    def get_det_pred(self, img, img_whwh):
-        # nestedtensor to resnet backbone and position encodings
-        xs = self.backbone(img.tensors)
-        features = []
-        pos = []
-        for name, x in xs.items():
-            m = img.mask
-            assert m is not None
-            mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
-            nested_feat = NestedTensor(x, mask)
-            features.append(nested_feat)
-            pos.append(self.pos_enc(nested_feat))
-        srcs = []
-        masks = []
-        for l, feat in enumerate(features):
-            src, mask = feat.decompose()
-            srcs.append(self.input_proj[l](src))
-            masks.append(mask)
-            assert mask is not None
-        if self.num_feature_levels > len(srcs):
-            _len_srcs = len(srcs)
-            for l in range(_len_srcs, self.num_feature_levels):
-                if l == _len_srcs:
-                    src = self.input_proj[l](features[-1].tensors)
-                else:
-                    src = self.input_proj[l](srcs[-1])
-                m = img.mask
-                mask = F.interpolate(m[None].float(), size=src.shape[-2:]).to(
-                    torch.bool
-                )[0]
-                pos_l = self.pos_enc(NestedTensor(src, mask)).to(src.dtype)
-                srcs.append(src)
-                masks.append(mask)
-                pos.append(pos_l)
-
-        query_embeds = None
-        if not self.two_stage:
-            query_embeds = self.query_embed.weight
-        (
-            aux_info,
-            hs,
-            init_reference,
-            inter_references,
-            memory,
-        ) = self.transformer(srcs, masks, pos, query_embeds)
-
-        outputs_classes = []
-        outputs_coords = []
-        outputs_rpts = []
-        outputs_embs = []
-        for lvl in range(hs.shape[0]):
-            if lvl == 0:
-                reference = init_reference
-            else:
-                reference = inter_references[lvl - 1]
-            reference = _inverse_sigmoid(reference)
-            outputs_class = self.class_embed[lvl](hs[lvl])
-            tmp = self.bbox_embed[lvl](hs[lvl])
-            if reference.shape[-1] == 4:
-                tmp += reference
-                outputs_rpts.append(
-                    reference[..., :2].sigmoid() * img_whwh[:, None, :2]
-                )  # rel in aug (before padding)->abs in aug
-            else:
-                assert reference.shape[-1] == 2
-                tmp[..., :2] += reference
-                outputs_rpts.append(reference.sigmoid() * img_whwh[:, None, :2])
-            outputs_coord = tmp.sigmoid()  # B x N x 4
-            outputs_coord = outputs_coord * img_whwh[:, None, :]  # ccwh_abs
-            bimg, nq = outputs_coord.shape[:2]
-            outputs_coord = box_cxcywh_to_xyxy(outputs_coord.flatten(0, 1)).reshape(
-                bimg, nq, -1
-            )
-            outputs_classes.append(outputs_class)
-            outputs_coords.append(outputs_coord)  # xyxy_abs
-            outputs_embs.append(hs[lvl])
-
-        outputs_class = torch.stack(outputs_classes)
-        outputs_coord = torch.stack(outputs_coords)
-        outputs_rpts = torch.stack(outputs_rpts)
-        outputs_embs = torch.stack(outputs_embs)
-        # outputs_id_feats = F.normalize(hs, dim=-1)
-        # outputs_id_feats = hs
-        return (
-            aux_info,
-            memory,
-            hs[-1],
-            (outputs_class, outputs_coord, outputs_rpts, outputs_embs),
-        )
-
     def forward(self, input_list):
         if self.training:
             images, gt_instances = self.preprocess_input(input_list)
@@ -746,6 +635,8 @@ class DDetrDetHead(nn.Module):
         self.transformer=transformer
         hidden_dim = transformer.d_model
         self.query_embed = nn.Embedding(num_queries, hidden_dim * 2)
+        self.class_embed = nn.Linear(hidden_dim, 1)  # only 1 category
+        self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
         if self.num_feature_levels > 1:
             num_backbone_outs = len(in_features)
             input_proj_list = []

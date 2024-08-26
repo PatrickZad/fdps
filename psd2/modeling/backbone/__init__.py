@@ -3,7 +3,6 @@ from .build import build_backbone, BACKBONE_REGISTRY  # noqa F401 isort:skip
 
 from .backbone import Backbone
 from .fpn import FPN
-from .fpn_mr import MrFPN
 from .regnet import RegNet
 from .resnet import (
     BasicStem,
@@ -14,9 +13,6 @@ from .resnet import (
     BottleneckBlock,
     build_resnet_backbone_half,
     build_resnet_backbone_minor,
-    build_resnet_backbone_half1,
-    build_resnet_backbone_half2,
-    build_resnet_backbone_half4,
 )
 from .vit import (
     build_vit_base_backbone,
@@ -32,8 +28,7 @@ from .convnext import (
     convnext_tiny_minor,
     convnext_tiny_half
 )
-from .patch_tk_ms import build_ptkms_backbone
-from .resnet_hybrid import build_resnet5034_backbone
+
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]
 # TODO can expose more resnet blocks after careful consideration

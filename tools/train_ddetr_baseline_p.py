@@ -203,6 +203,7 @@ class Trainer(DefaultTrainer):
     @classmethod
     def build_optimizer(cls, cfg, model):
         from psd2.solver.build import maybe_add_gradient_clipping
+        import re
 
         logger = logging.getLogger("psd2.trainer")
         frozen_params = []

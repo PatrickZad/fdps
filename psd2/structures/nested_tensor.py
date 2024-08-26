@@ -95,6 +95,6 @@ def nested_collate_fn(batch):
     return tuple(batch)
 
 
-def nested_collate_fn_idvi(batch):
-    batch[0] = nested_tensor_from_tensor_list_idvi(batch[0])
+def nested_collate_fn_idvi(batch,idvi):
+    batch[0] = nested_tensor_from_tensor_list_idvi(batch[0],idvi)
     return tuple(batch)

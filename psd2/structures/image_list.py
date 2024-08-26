@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from __future__ import division
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Optional
 import torch
 from torch import device
 from torch.nn import functional as F
+from torch import Tensor
 
 
 def _as_tensor(x: Tuple[int, int]) -> torch.Tensor:
@@ -31,21 +32,40 @@ class ImageList(object):
             During tracing, it becomes list[Tensor] instead.
     """
 
-    def __init__(self, tensor: torch.Tensor, image_sizes: List[Tuple[int, int]]):
+    def __init__(
+        self,
+        tensor: torch.Tensor,
+        image_sizes: List[Tuple[int, int]],
+        mask: Optional[Tensor] = None,
+    ):
         """
         Arguments:
             tensor (Tensor): of shape (N, H, W) or (N, C_1, ..., C_K, H, W) where K >= 1
             image_sizes (list[tuple[int, int]]): Each tuple is (h, w). It can
                 be smaller than (H, W) due to padding.
+            mask: indicating padding area (True for padding)
         """
+        assert image_sizes is not None or mask is not None
         self.tensor = tensor
-        self.image_sizes = image_sizes
+        if image_sizes is None:
+            self.mask = mask
+            inv_mask = 1 - mask.int()
+            self.image_sizes = torch.stack(
+                [inv_mask.sum(dim=1)[:, 0], inv_mask.sum(dim=2)[:, 0]], dim=-1
+            ).tolist()  # B x 2 hw
+        elif mask is None:
+            self.image_sizes = image_sizes  # unpadded image sizes
+            mask = torch.ones(
+                (tensor.shape[0], tensor.shape[2], tensor.shape[3]),
+                dtype=torch.bool,
+                device=tensor.device,
+            )
+            for bi in range(tensor.shape[0]):
+                mask[bi, : image_sizes[bi][0], : image_sizes[bi][1]] = 0
+            self.mask = mask.bool()
 
     def __len__(self) -> int:
         return len(self.image_sizes)
-    @property
-    def tensors(self):
-        return self.tensor
 
     def __getitem__(self, idx) -> torch.Tensor:
         """
@@ -63,11 +83,16 @@ class ImageList(object):
     @torch.jit.unused
     def to(self, *args: Any, **kwargs: Any) -> "ImageList":
         cast_tensor = self.tensor.to(*args, **kwargs)
-        return ImageList(cast_tensor, self.image_sizes)
+        mask = self.mask
+        cast_mask = mask.to(device)
+        return ImageList(cast_tensor, self.image_sizes, cast_mask)
 
     @property
     def device(self) -> device:
         return self.tensor.device
+
+    def decompose(self):
+        return self.tensors, self.mask
 
     @staticmethod
     def from_tensors(
@@ -112,8 +137,15 @@ class ImageList(object):
             # This seems slightly (2%) faster.
             # TODO: check whether it's faster for multiple images as well
             image_size = image_sizes[0]
-            padding_size = [0, max_size[-1] - image_size[1], 0, max_size[-2] - image_size[0]]
-            batched_imgs = F.pad(tensors[0], padding_size, value=pad_value).unsqueeze_(0)
+            padding_size = [
+                0,
+                max_size[-1] - image_size[1],
+                0,
+                max_size[-2] - image_size[0],
+            ]
+            batched_imgs = F.pad(tensors[0], padding_size, value=pad_value).unsqueeze_(
+                0
+            )
         else:
             # max_size can be a tensor in tracing mode, therefore convert to list
             batch_shape = [len(tensors)] + list(tensors[0].shape[:-2]) + list(max_size)
@@ -122,3 +154,12 @@ class ImageList(object):
                 pad_img[..., : img.shape[-2], : img.shape[-1]].copy_(img)
 
         return ImageList(batched_imgs.contiguous(), image_sizes)
+
+    def __repr__(self):
+        return str(self.tensors)
+
+    def select_by_indices(self, indices):
+        return ImageList(
+            torch.stack([self.tensor[i] for i in indices]),
+            [self.image_sizes[i] for i in indices],
+        )

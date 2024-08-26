@@ -1,0 +1,111 @@
+MODEL:
+  META_ARCHITECTURE: "DDETR_Baseline"
+  WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
+  PIXEL_MEAN: [0.485, 0.456, 0.406]
+  PIXEL_STD: [0.229, 0.224, 0.225]
+  BACKBONE:
+    NAME: "build_resnet_backbone"
+    FREEZE_AT: 2
+  RESNETS:
+    DEPTH: 50
+    NORM: "FrozenBN"
+    RES2_OUT_CHANNELS: 256
+    STRIDE_IN_1X1: False
+    OUT_FEATURES: ["res5"]
+DETECTOR:
+  MODEL:
+    IN_FEATS: ["res5"]
+    NUM_FEAT_LEVELS: 1
+    BOX_REFINE: True
+    N_QUERIES: 300
+    D_TRANSFORMER:
+      ENC_DEPTH: 6
+      DEC_DEPTH: 4
+      DIM_FEEDFORWARD: 1024
+      HIDDEN_DIM: 256
+      DROPOUT: 0.1
+      N_HEADS: 8
+      DEC_N_POINTS: 4
+      ENC_N_POINTS: 4
+  LOSS:
+    LOSS_WEIGHTS:
+      CLS: 2.0
+      BOX_L1: 5.0
+      BOX_GIOU: 2.0
+      NO_OBJECT: 0.1
+    DEEP_SUPERVISION: True
+    FOCAL:
+      USE_FOCAL: True
+      ALPHA: 0.25
+      GAMMA: 2.0
+      PRIOR_PROB: 0.01
+REID_HEAD:
+  ROI_POOLER:
+    TYPE: "ROIAlignV2"
+    POOLER_RESOLUTION: [16,8]
+    SAMP_RATIO: 2
+    SCALES: [0.0625] # 1/16
+  POOL_LAYER: "gempoolP"
+  PERSON_FEATURE:
+    DIM: 2048
+  TRAIN_REID: True
+  TRAIN_WITH_DET: False
+  TRAIN_WITH_NMS: False
+  ID_ASSIGN:
+    NAME: "siou"
+    POS_IOU: 0.5
+    POS_SCORE: 0.5
+  BOX_AUGMENTATION:
+    ENABLE: True
+    NAME: "dn_detr"
+    H_CENTER: 0.4
+    H_SCALE: 0.2
+    NUM_LABELED: 9
+    APPEND_GT: True
+    NUM_UNLABLED: 9
+  LOSS:
+    NAME: "oim"
+    OIM:
+      NORMALIZE: True
+      LB_LAYER: "lb_norm"
+      ULB_LAYER: "ulb_full"
+      LUT_LEN: 1
+      QUEUE_LEN: 1
+      LB_FACTOR: 30
+      ULB_FACTOR: 30
+      SYNC: False
+      ADA_MM: "null" # "assign", "obj"
+      MM_FACTOR: 0.3
+      FOCAL:
+        USE_FOCAL: True
+        FOCAL_ALPHA: 1
+        FOCAL_GAMMA: 2
+    LOSS_WEIGHTS:
+      OIM: 1.0
+  USE_CHECKPOINT: False
+INPUT:
+  MIN_SIZE_TRAIN: (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 900)
+  MAX_SIZE_TRAIN: 1500
+  MIN_SIZE_TEST: 900
+  MAX_SIZE_TEST: 1500
+  FORMAT: "RGB"
+  SIZE_DIVISIBILITY: 32
+
+DATALOADER:
+  NUM_WORKERS: 8
+
+SOLVER:
+OPTIM: "AdamW"
+  LR_SCHEDULER_NAME: "WarmupMultiStepLR"
+  BASE_LR: 2e-4
+  WEIGHT_DECAY: 1e-4
+  GAMMA: 0.1
+  IMS_PER_BATCH: 5
+  LR_FACTORS: [0.1,0.1,0.1]
+  LR_GROUP_REGEX: ["backbone.+",".+reference_points.+",".+sampling_offsets.+"]
+
+TEST:
+  IMS_PER_PROC: 8
+# SEED: 42
+VIS_PERIOD: 500
+VERSION: 2

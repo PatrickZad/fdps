@@ -3,14 +3,18 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from typing import Dict, List, Optional, Tuple
 from ...backbone import build_backbone
 from ..build import META_ARCH_REGISTRY
-from psd2.structures.nested_tensor import nested_collate_fn, NestedTensor
+from psd2.structures.nested_tensor import nested_collate_fn_idvi, NestedTensor
 from psd2.utils.events import get_event_storage
 from psd2.utils.visualizer import pca_feat, Visualizer
 from psd2.structures.boxes import box_cxcywh_to_xyxy
 import torchvision.transforms.functional as tvF
+from psd2.config import configurable
+from psd2.utils.events import get_event_storage
+
+from psd2.modeling.backbone import Backbone, build_backbone
 from PIL import Image
 
 COLORS = ["r", "g", "b", "y", "c", "m"]
@@ -26,22 +30,41 @@ T_COLORS_BG = {
 
 @META_ARCH_REGISTRY.register()
 class SearchBase(nn.Module):
-    def __init__(self, cfg):
+    @configurable
+    def __init__(self, *,
+        backbone: Backbone,
+        pixel_mean: Tuple[float],
+        pixel_std: Tuple[float],
+        input_format: Optional[str] = None,
+        vis_period: int = 0,):
         super().__init__()
-        self.cfg = cfg
-        self.backbone = build_backbone(cfg)
+        self.backbone = backbone
 
         self.register_buffer(
-            "pixel_mean", torch.Tensor(cfg.MODEL.PIXEL_MEAN).view(-1, 1, 1)
+            "pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False
         )
-        self.register_buffer(
-            "pixel_std", torch.Tensor(cfg.MODEL.PIXEL_STD).view(-1, 1, 1)
-        )
+        self.register_buffer("pixel_std", torch.tensor(pixel_std).view(-1, 1, 1), False)
         assert (
             self.pixel_mean.shape == self.pixel_std.shape
         ), f"{self.pixel_mean} and {self.pixel_std} have different shapes!"
-        self.vis_period = cfg.VIS_PERIOD
-
+        assert (
+            self.pixel_mean.shape == self.pixel_std.shape
+        ), f"{self.pixel_mean} and {self.pixel_std} have different shapes!"
+        self.vis_period = vis_period
+        if vis_period > 0:
+            assert (
+                input_format is not None
+            ), "input_format is required for visualization!"
+    @classmethod
+    def from_config(cls, cfg):
+        backbone = build_backbone(cfg)
+        return {
+            "backbone": backbone,
+            "input_format": cfg.INPUT.FORMAT,
+            "vis_period": cfg.VIS_PERIOD,
+            "pixel_mean": cfg.MODEL.PIXEL_MEAN,
+            "pixel_std": cfg.MODEL.PIXEL_STD,
+        }
     @property
     def device(self):
         return self.pixel_mean.device
@@ -81,7 +104,7 @@ class SearchBase(nn.Module):
             img_org_hws,
             img_org_boxes,
         ]
-        return nested_collate_fn(batched_input)
+        return nested_collate_fn_idvi(batched_input,self.backbone.size_divisibility)
 
     def forward(self, input_list):
         if "query" in input_list[0].keys():

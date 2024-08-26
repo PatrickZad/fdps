@@ -1,0 +1,17 @@
+_BASE_: "./ti_ddetr_baseline.yaml"
+MODEL:
+  BACKBONE:
+    NAME: "build_resnet_backbone_half"
+    FREEZE_AT: 2
+DATASETS:
+  TRAIN: ("PRW_Train",) 
+  TEST: ("PRW_Gallery", ) #
+SOLVER:
+  MAX_ITER: 21361 # 356 * 60+1
+  STEPS: (14240,)
+  CHECKPOINT_PERIOD: 712
+  WARMUP_ITERS: 712
+  IMS_PER_BATCH: 16
+TEST:
+  EVAL_PERIOD: 712
+OUTPUT_DIR: "outputs/tips_next/prw_tiddetr_h50"

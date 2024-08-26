@@ -1,6 +1,0 @@
-python tools/train_seqnet.py --config-file configs/search/vis_eval/seqnet_1c_cdps.yaml --num-gpus 2 --resume --dist-url tcp://127.0.0.1:58866 --eval-only TEST.VIS True TEST.IMS_PER_PROC 1 TEST.VIS_HIST_ONLY False
-python tools/train_srcnn.py --config-file configs/search/vis_eval/srcnn_oim_w_ulb_cuhk.yaml --num-gpus 2 --resume --dist-url tcp://127.0.0.1:58866 --eval-only TEST.VIS True TEST.IMS_PER_PROC 4 TEST.VIS_HIST_ONLY False
-python tools/train_srcnn.py --config-file configs/search/vis_eval/srcnn_oim_w_ulb_prw.yaml --num-gpus 2 --resume --dist-url tcp://127.0.0.1:58866 --eval-only TEST.VIS True TEST.IMS_PER_PROC 4 TEST.VIS_HIST_ONLY False
-python tools/train_srcnn.py --config-file configs/search/vis_eval/srcnn_prw_dc_3c_4lr_mstp_trid_fixwlun_sfpn_adaiou_long.yaml --num-gpus 2 --resume --dist-url tcp://127.0.0.1:58866 --eval-only TEST.VIS True TEST.IMS_PER_PROC 4 TEST.VIS_HIST_ONLY False
-python tools/train_srcnn.py --config-file configs/search/vis_eval/srcnn_trid_w_ulb_cuhk.yaml --num-gpus 2 --resume --dist-url tcp://127.0.0.1:58866 --eval-only TEST.VIS True TEST.IMS_PER_PROC 4 TEST.VIS_HIST_ONLY False
-python tools/train_srcnn.py --config-file configs/search/vis_eval/srcnn_cdps_dc_1c_4lr_mstp_trid_fixwlun.yaml --num-gpus 2 --resume --dist-url tcp://127.0.0.1:58866 --eval-only TEST.VIS True TEST.IMS_PER_PROC 4 TEST.VIS_HIST_ONLY False

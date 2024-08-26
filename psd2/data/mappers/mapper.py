@@ -24,7 +24,7 @@ class SearchMapper(object):
                     dT.ResizeShortestEdge(
                         cfg.INPUT.MIN_SIZE_TRAIN,
                         cfg.INPUT.MAX_SIZE_TRAIN,
-                        size_divisibility=cfg.INPUT.SIZE_DIVISIBILITY,
+                        size_divisibility=1,
                         sample_style="choice",
                     ),
                     dT.RandomFlip(prob=0.5, horizontal=True, vertical=False),
@@ -34,7 +34,7 @@ class SearchMapper(object):
             self.augs = dT.ResizeShortestEdge(
                 cfg.INPUT.MIN_SIZE_TEST,
                 cfg.INPUT.MAX_SIZE_TEST,
-                size_divisibility=cfg.INPUT.SIZE_DIVISIBILITY,
+                size_divisibility=1,
                 sample_style="choice",
             )
         self.totensor_norm = tT.Compose(

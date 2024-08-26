@@ -563,6 +563,7 @@ _C.EXT_VIS = CN(new_allowed=True)
 # ---------------------------------------------------------------------------- #
 _C.SOLVER = CN()
 
+_C.SOLVER.OPTIM = "SGD"
 # Options: WarmupMultiStepLR, WarmupCosineLR.
 # See detectron2/solver/build.py for definition.
 _C.SOLVER.LR_SCHEDULER_NAME = "WarmupMultiStepLR"
@@ -664,7 +665,7 @@ _C.TEST.PRECISE_BN = CN({"ENABLED": False})
 _C.TEST.PRECISE_BN.NUM_ITER = 200
 _C.TEST.VIS = False
 _C.TEST.VIS_DET = False
-_C.TEST.VIS_HIST_ONLY = True
+_C.TEST.VIS_HIST_ONLY = False
 # speed up evaluation
 _C.TEST.IMS_PER_PROC = 4
 # ---------------------------------------------------------------------------- #

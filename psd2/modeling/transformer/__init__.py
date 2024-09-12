@@ -1,2 +1,3 @@
-from .deformable import DeformableTransformer, PromptDeformableTransformer
+from .deformable import DeformableTransformer
 from .fp_deformable import FPDeformableEncTransformer
+from .dab_deformable import DabDeformableTransformer

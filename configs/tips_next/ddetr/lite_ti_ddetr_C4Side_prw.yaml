@@ -1,0 +1,9 @@
+_BASE_: "./ti_ddetr_C4Side_prw.yaml"
+MODEL:
+  META_ARCHITECTURE: "DDETR_C4Side"
+  WEIGHTS: "outputs/tips_next/prw_ddetr_4l_h50_6d/model_0018721.pth"
+REID_HEAD:
+  BOX_AUGMENTATION:
+    NUM_LABELED: 9
+    NUM_UNLABLED: 9
+OUTPUT_DIR: "outputs/tips_next/lite_tiddetr-c4side_prw"

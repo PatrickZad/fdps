@@ -290,9 +290,12 @@ class TiRCNN_C4Side2StreamOnCrops(TiRCNN_2StreamOnCrops):
                         if not isinstance(pa, torch.Tensor):
                             pa = torch.from_numpy(pa).to(self.device)
                         bn_neck_params[pn.split("bn_neck")[1][1:]] = pa
-            self.side_res3.load_state_dict(side_res_params[0],strict=False)
-            self.side_res4.load_state_dict(side_res_params[1],strict=False)
-            self.side_res5.load_state_dict(side_res_params[2],strict=False)
+            ret=self.side_res3.load_state_dict(side_res_params[0],strict=False)
+            print(ret)
+            ret=self.side_res4.load_state_dict(side_res_params[1],strict=False)
+            print(ret)
+            ret=self.side_res5.load_state_dict(side_res_params[2],strict=False)
+            print(ret)
             if len(bn_neck_params) > 0:
                 self.bn_neck.load_state_dict(bn_neck_params)
         return output
@@ -557,6 +560,177 @@ class TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip(TiRCNN_C4Side2StreamOnCropsOi
         return torch.stack(crops)
 
 @META_ARCH_REGISTRY.register()
+class TiRCNN_C4HalfSide2StreamOnCropsOimProtoConReFlip(TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip):
+    @configurable
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args,**kwargs)
+
+        self.side_res3 = nn.Sequential(
+            *ResNet.make_stage(
+                **{
+                    "num_blocks": 2,
+                    "stride_per_block": [2, 1],
+                    "in_channels": 256,
+                    "out_channels": 512,
+                    "norm": "BN",
+                    "bottleneck_channels": 128,
+                    "stride_in_1x1": False,
+                    "dilation": 1,
+                    "num_groups": 1,
+                    "block_class": BottleneckBlock,
+                }
+            )
+        )
+        self.side_res4 = nn.Sequential(
+            *ResNet.make_stage(
+                **{
+                    "num_blocks": 3,
+                    "stride_per_block": [2, 1, 1],
+                    "in_channels": 512,
+                    "out_channels": 1024,
+                    "norm": "BN",
+                    "bottleneck_channels": 256,
+                    "stride_in_1x1": False,
+                    "dilation": 1,
+                    "num_groups": 1,
+                    "block_class": BottleneckBlock,
+                }
+            )
+        )
+        self.side_res5 = nn.Sequential(
+            *ResNet.make_stage(
+                **{
+                    "num_blocks": 2,
+                    "stride_per_block": [1, 1],
+                    "in_channels": 1024,
+                    "out_channels": 2048,
+                    "norm": "BN",
+                    "bottleneck_channels": 512,
+                    "stride_in_1x1": False,
+                    "dilation": 1,
+                    "num_groups": 1,
+                    "block_class": BottleneckBlock,
+                }
+            )
+        )
+        
+
+@META_ARCH_REGISTRY.register()
+class TiRCNN_C4HalfmSide2StreamOnCropsOimProtoConReFlip(TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip):
+    @configurable
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args,**kwargs)
+
+        self.side_res3 = nn.Sequential(
+            *ResNet.make_stage(
+                **{
+                    "num_blocks": 2,
+                    "stride_per_block": [2, 1],
+                    "in_channels": 256,
+                    "out_channels": 512,
+                    "norm": "BN",
+                    "bottleneck_channels": 128,
+                    "stride_in_1x1": False,
+                    "dilation": 1,
+                    "num_groups": 1,
+                    "block_class": BottleneckBlock,
+                }
+            )
+        )
+        self.side_res4 = nn.Sequential(
+            *ResNet.make_stage(
+                **{
+                    "num_blocks": 2,
+                    "stride_per_block": [2, 1],
+                    "in_channels": 512,
+                    "out_channels": 1024,
+                    "norm": "BN",
+                    "bottleneck_channels": 256,
+                    "stride_in_1x1": False,
+                    "dilation": 1,
+                    "num_groups": 1,
+                    "block_class": BottleneckBlock,
+                }
+            )
+        )
+        self.side_res5 = nn.Sequential(
+            *ResNet.make_stage(
+                **{
+                    "num_blocks": 2,
+                    "stride_per_block": [1, 1],
+                    "in_channels": 1024,
+                    "out_channels": 2048,
+                    "norm": "BN",
+                    "bottleneck_channels": 512,
+                    "stride_in_1x1": False,
+                    "dilation": 1,
+                    "num_groups": 1,
+                    "block_class": BottleneckBlock,
+                }
+            )
+        )
+        
+
+
+@META_ARCH_REGISTRY.register()
+class TiRCNN_C4SideFixfusion2StreamOnCropsOimProtoConReFlip(TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip):
+    def get_reid_backbone_features(self, det_backbone_features, image_list):
+        del image_list
+        reid_res3_feat = self.side_res3(det_backbone_features["res2"]) # NOTE checkpoint may causes gradient lost
+        alpha = 0.5
+        reid_res3_feat = (
+            alpha * det_backbone_features["res3"] + (1 - alpha) * reid_res3_feat
+        )
+        reid_res4_feat = (
+            checkpoint.checkpoint(self.side_res4, reid_res3_feat)
+            if self.use_checkpoint
+            else self.side_res4(reid_res3_feat)
+        )
+        del reid_res3_feat
+        alpha = 0.5
+        reid_res4_feat = (
+            alpha * det_backbone_features["res4"] + (1 - alpha) * reid_res4_feat
+        )
+        return reid_res4_feat
+@META_ARCH_REGISTRY.register()
+class TiRCNN_C4SideConv1fusion2StreamOnCropsOimProtoConReFlip(TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip):
+    @configurable
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args,**kwargs)
+        self.res3_proj=nn.Conv2d(512,512,1)
+        self.res4_proj=nn.Conv2d(1024,1024,1)
+    def get_reid_backbone_features(self, det_backbone_features, image_list):
+        del image_list
+        reid_res3_feat = (
+            checkpoint.checkpoint(self.side_res3, det_backbone_features["res2"])
+            if self.use_checkpoint
+            else self.side_res3(det_backbone_features["res2"])
+        )
+        reid_res3_feat_p = self.res3_proj(det_backbone_features["res3"]) 
+        
+        # checkpoint.checkpoint(self.res3_proj, det_backbone_features["res3"]) if self.use_checkpoint else 
+        
+        reid_res3_feat=reid_res3_feat_p+ reid_res3_feat
+        del reid_res3_feat_p
+        reid_res4_feat = (
+            checkpoint.checkpoint(self.side_res4, reid_res3_feat)
+            if self.use_checkpoint
+            else self.side_res4(reid_res3_feat)
+        )
+        del reid_res3_feat
+        reid_res4_feat_p = self.res4_proj(det_backbone_features["res4"]) 
+        # checkpoint.checkpoint(self.res4_proj, det_backbone_features["res4"]) if self.use_checkpoint else 
+        
+        reid_res4_feat = reid_res4_feat_p +  reid_res4_feat
+        return reid_res4_feat
+@META_ARCH_REGISTRY.register()
+class TiRCNN_C4SideConv3fusion2StreamOnCropsOimProtoConReFlip(TiRCNN_C4SideConv1fusion2StreamOnCropsOimProtoConReFlip):
+    @configurable
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args,**kwargs)
+        self.res3_proj=nn.Conv2d(512,512,3,padding=1)
+        self.res4_proj=nn.Conv2d(1024,1024,3,padding=1)
+@META_ARCH_REGISTRY.register()
 class TiRCNN_C4Side2StreamOnCropsOimProtoConReFlipDetBox(TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip):
     def forward_ps(self, det_pred, det_backbone_features, image_list, gts):
         reid_bk_feats = self.get_reid_backbone_features(
@@ -735,27 +909,7 @@ class TiRCNN_C4SideSep2StreamOnCropsOimProtoConReFlip(TiRCNN_C4Side2StreamOnCrop
         )
         return reid_res4_feat
 
-@META_ARCH_REGISTRY.register()
-class TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip_DC5(TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip):
-    @configurable
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args,**kwargs)
-        self.side_res5 = nn.Sequential(
-            *ResNet.make_stage(
-                **{
-                    "num_blocks": 3,
-                    "stride_per_block": [1, 1, 1],
-                    "in_channels": 1024,
-                    "out_channels": 2048,
-                    "norm": "BN",
-                    "bottleneck_channels": 512,
-                    "stride_in_1x1": False,
-                    "dilation": 2,
-                    "num_groups": 1,
-                    "block_class": BottleneckBlock,
-                }
-            )
-        )
+
 
 
 @META_ARCH_REGISTRY.register()
@@ -1081,6 +1235,46 @@ class TiRCNN_NextC4Side2StreamOnCropsOimProtoConReFlip(TiRCNN_C4Side2StreamOnCro
             alpha * det_backbone_features["stage3_unorm"] + (1 - alpha) * reid_res4_feat
         )
         return reid_res4_feat
+
+
+@META_ARCH_REGISTRY.register()
+class TiRCNN_NextC4SideConv1fusion2StreamOnCropsOimProtoConReFlip(TiRCNN_NextC4Side2StreamOnCropsOimProtoConReFlip):
+    @configurable
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args,**kwargs)
+        self.res3_proj=nn.Conv2d(192,192,1)
+        self.res4_proj=nn.Conv2d(384,384,1)
+    def get_reid_backbone_features(self, det_backbone_features, image_list):
+        del image_list
+        reid_res3_feat = (
+            checkpoint.checkpoint(self.side_res3, det_backbone_features["stage1_unorm"])
+            if self.use_checkpoint
+            else self.side_res3(det_backbone_features["stage1_unorm"])
+        )
+        reid_res3_feat_p = self.res3_proj(det_backbone_features["stage2_unorm"]) 
+        
+        # checkpoint.checkpoint(self.res3_proj, det_backbone_features["res3"]) if self.use_checkpoint else 
+        
+        reid_res3_feat=reid_res3_feat_p+ reid_res3_feat
+        del reid_res3_feat_p
+        reid_res4_feat = (
+            checkpoint.checkpoint(self.side_res4, reid_res3_feat)
+            if self.use_checkpoint
+            else self.side_res4(reid_res3_feat)
+        )
+        del reid_res3_feat
+        reid_res4_feat_p = self.res4_proj(det_backbone_features["stage3_unorm"]) 
+        # checkpoint.checkpoint(self.res4_proj, det_backbone_features["res4"]) if self.use_checkpoint else 
+        
+        reid_res4_feat = reid_res4_feat_p +  reid_res4_feat
+        return reid_res4_feat
+@META_ARCH_REGISTRY.register()
+class TiRCNN_NextC4SideConv3fusion2StreamOnCropsOimProtoConReFlip(TiRCNN_NextC4SideConv1fusion2StreamOnCropsOimProtoConReFlip):
+    @configurable
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args,**kwargs)
+        self.res3_proj=nn.Conv2d(192,192,3,padding=1)
+        self.res4_proj=nn.Conv2d(384,384,3,padding=1)
 
 @META_ARCH_REGISTRY.register()
 class TiRCNN_NextC4Side2StreamOnCropsOimOnlineConReFlip(TiRCNN_NextC4Side2StreamOnCropsOimProtoConReFlip):

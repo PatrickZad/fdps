@@ -67,7 +67,7 @@ def build_evaluator(cfg, dataset_name, output_folder=None):
                 dataset_name,
                 distributed=True,
                 output_dir=output_folder,
-                s_threds=[0.15, 0.2, 0.3, 0.35],  # [0.05, 0.1, 0.15],
+                s_threds=[0.15, 0.2,0.25, 0.3, 0.35],  # [0.05, 0.1, 0.15],
                 vis=cfg.TEST.VIS_DET,
             )
         )
@@ -78,7 +78,7 @@ def build_evaluator(cfg, dataset_name, output_folder=None):
                     dataset_name,
                     distributed=True,
                     output_dir=output_folder,
-                    s_threds=[0.15, 0.2, 0.3,0.35],  # [0.05, 0.1, 0.15],
+                    s_threds=[0.15, 0.2,0.25, 0.3,0.35],  # [0.05, 0.1, 0.15],
                     vis=vis,
                     hist_only=hist_only,
                 )
@@ -89,7 +89,7 @@ def build_evaluator(cfg, dataset_name, output_folder=None):
                     dataset_name,
                     distributed=True,
                     output_dir=output_folder,
-                    s_threds=[0.15, 0.2, 0.3,0.35],  # [0.05, 0.1, 0.15],
+                    s_threds=[0.15, 0.2, 0.25,0.3,0.35],  # [0.05, 0.1, 0.15],
                     vis=vis,
                     hist_only=hist_only,
                 )
@@ -319,11 +319,7 @@ def main(args):
 if __name__ == "__main__":
     args = default_argument_parser().parse_args()
     print("Command Line Args:", args)
-    re = True
-    while re:
-        re = False
-        try:
-            launch(
+    launch(
                 main,
                 args.num_gpus,
                 num_machines=args.num_machines,
@@ -331,6 +327,4 @@ if __name__ == "__main__":
                 dist_url=args.dist_url,
                 args=(args,),
             )
-            re = False
-        except Exception as e:
-            print(e)
+

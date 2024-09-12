@@ -572,7 +572,7 @@ class DDetrHungarianMatcher(SrcnnHungarianMatcher):
         aug_whwh_bs = torch.stack([v["aug_whwh"] for v in targets])
         out_bbox = outputs["pred_boxes"] / aug_whwh_bs  # xyxy_rel
         out_bbox = out_bbox.flatten(0, 1)  # [batch_size * num_queries, 4]
-        out_box = box_xyxy_to_cxcywh(out_bbox)  # ccwh_rel
+        out_bbox = box_xyxy_to_cxcywh(out_bbox)  # ccwh_rel
 
         tgt_bbox = torch.cat([v["boxes"] / v["aug_whwh"] for v in targets])  # xyxy_rel
         tgt_bbox = box_xyxy_to_cxcywh(tgt_bbox)  # ccwh_rel

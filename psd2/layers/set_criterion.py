@@ -287,6 +287,7 @@ class DDetrSetCriterion(SrcnnSetCriterion):
         )
 
         return losses
+    
 
 
 def sigmoid_focal_loss(

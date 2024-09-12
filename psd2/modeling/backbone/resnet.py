@@ -192,17 +192,17 @@ class BottleneckBlock(CNNBlockBase):
         # TODO this somehow hurts performance when training GN models from scratch.
         # Add it as an option when we need to use this code to train a backbone.
 
-    def forward(self, x):
-        out = self.conv1(x)
+    def forward(self, x,with_cp=False):
+        out =checkpoint(self.conv1,x)  if with_cp and self.training else self.conv1(x)
         out = F.relu_(out)
 
-        out = self.conv2(out)
+        out = checkpoint(self.conv2,out)  if with_cp and self.training else self.conv2(out)
         out = F.relu_(out)
 
-        out = self.conv3(out)
+        out = checkpoint(self.conv3,out)  if with_cp and self.training else self.conv3(out)
 
         if self.shortcut is not None:
-            shortcut = self.shortcut(x)
+            shortcut = checkpoint(self.shortcut,x)  if with_cp and self.training else self.shortcut(x)
         else:
             shortcut = x
 
@@ -459,7 +459,8 @@ class ResNet(Backbone):
             outputs["stem"] = x
         for i,(name, stage) in enumerate(zip(self.stage_names, self.stages)):
             if i+2>=self.checkpoint_at:
-                x=checkpoint(stage,x)
+                for blk in stage:
+                    x=blk(x,with_cp=True)
             else:
                 x = stage(x)
             if name in self._out_features:

@@ -1,0 +1,25 @@
+_BASE_: "./ti_ddetr_baseline.yaml"
+MODEL:
+  BACKBONE:
+    NAME: "build_resnet_backbone_half"
+    FREEZE_AT: 2
+  RESNETS:
+    RES5_DILATION: 2
+    CHECKPOINT_AT: 4
+DETECTOR:
+  MODEL:
+    D_TRANSFORMER:
+      DEC_DEPTH: 6
+      USE_CHECKPOINT: True
+DATASETS:
+  TRAIN: ("CUHK-SYSU_Train",) 
+  TEST: ("CUHK-SYSU_Gallery", ) #
+SOLVER:
+  MAX_ITER: 160001 # 70001 # 700 * 100+1
+  STEPS: (128000,) # (56000,)
+  CHECKPOINT_PERIOD: 1600 # 1400
+  WARMUP_ITERS: 1600 # 1400
+  IMS_PER_BATCH: 14 # 16
+TEST:
+  EVAL_PERIOD: 1600 # 1400
+OUTPUT_DIR: "outputs/tips_next/cuhk_ddetr_dc5_h50_6d"

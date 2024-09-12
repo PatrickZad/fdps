@@ -11,6 +11,7 @@ import copy
 from turtle import forward
 from typing import Optional, List
 import math
+
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
@@ -19,7 +20,7 @@ import torch.utils.checkpoint as ckpt
 from psd2.layers.ops.modules import MSDeformAttn
 
 
-class DeformableTransformer(nn.Module):
+class DabDeformableTransformer(nn.Module):
     def __init__(
         self,
         d_model=256,
@@ -33,15 +34,11 @@ class DeformableTransformer(nn.Module):
         num_feature_levels=4,
         dec_n_points=4,
         enc_n_points=4,
-        two_stage=False,
-        two_stage_num_proposals=300,
     ):
         super().__init__()
 
         self.d_model = d_model
         self.nhead = nhead
-        self.two_stage = two_stage
-        self.two_stage_num_proposals = two_stage_num_proposals
 
         encoder_layer = DeformableTransformerEncoderLayer(
             d_model,
@@ -69,14 +66,6 @@ class DeformableTransformer(nn.Module):
 
         self.level_embed = nn.Parameter(torch.Tensor(num_feature_levels, d_model))
 
-        if two_stage:
-            self.enc_output = nn.Linear(d_model, d_model)
-            self.enc_output_norm = nn.LayerNorm(d_model)
-            self.pos_trans = nn.Linear(d_model * 2, d_model * 2)
-            self.pos_trans_norm = nn.LayerNorm(d_model * 2)
-        else:
-            self.reference_points = nn.Linear(d_model, 2)
-
         self._reset_parameters()
 
     def _reset_parameters(self):
@@ -86,9 +75,6 @@ class DeformableTransformer(nn.Module):
         for m in self.modules():
             if isinstance(m, MSDeformAttn):
                 m._reset_parameters()
-        if not self.two_stage:
-            xavier_uniform_(self.reference_points.weight.data, gain=1.0)
-            constant_(self.reference_points.bias.data, 0.0)
         normal_(self.level_embed)
 
     def get_proposal_pos_embed(self, proposals):
@@ -171,8 +157,7 @@ class DeformableTransformer(nn.Module):
         valid_ratio = torch.stack([valid_ratio_w, valid_ratio_h], -1)
         return valid_ratio
 
-    def forward(self, srcs, masks, pos_embeds, query_embed=None,use_checkpoint=False):
-        assert self.two_stage or query_embed is not None
+    def forward(self, srcs, masks, pos_embeds, query_embed=None,attn_mask=None,use_checkpoint=False):
 
         # prepare input for encoder
         src_flatten = []
@@ -214,38 +199,11 @@ class DeformableTransformer(nn.Module):
 
         # prepare input for decoder
         bs, _, c = memory.shape
-        if self.two_stage:
-            output_memory, output_proposals = self.gen_encoder_output_proposals(
-                memory, mask_flatten, spatial_shapes
-            )
-
-            # hack implementation for two-stage Deformable DETR
-            enc_outputs_class = self.decoder.class_embed[self.decoder.num_layers](
-                output_memory
-            )
-            enc_outputs_coord_unact = (
-                self.decoder.bbox_embed[self.decoder.num_layers](output_memory)
-                + output_proposals
-            )
-
-            topk = self.two_stage_num_proposals
-            topk_proposals = torch.topk(enc_outputs_class[..., 0], topk, dim=1)[1]
-            topk_coords_unact = torch.gather(
-                enc_outputs_coord_unact, 1, topk_proposals.unsqueeze(-1).repeat(1, 1, 4)
-            )
-            topk_coords_unact = topk_coords_unact.detach()
-            reference_points = topk_coords_unact.sigmoid()
-            init_reference_out = reference_points
-            pos_trans_out = self.pos_trans_norm(
-                self.pos_trans(self.get_proposal_pos_embed(topk_coords_unact))
-            )
-            query_embed, tgt = torch.split(pos_trans_out, c, dim=2)
-        else:
-            query_embed, tgt = torch.split(query_embed, c, dim=1)
-            query_embed = query_embed.unsqueeze(0).expand(bs, -1, -1)
+        reference_points = query_embed[..., self.d_model:].sigmoid() 
+        tgt = query_embed[..., :self.d_model]
+        if tgt.dim()==2:
             tgt = tgt.unsqueeze(0).expand(bs, -1, -1)
-            reference_points = self.reference_points(query_embed).sigmoid()
-            init_reference_out = reference_points
+        init_reference_out = reference_points
 
         # decoder
         hs, inter_references = self.decoder(
@@ -255,28 +213,13 @@ class DeformableTransformer(nn.Module):
             spatial_shapes,
             level_start_index,
             valid_ratios,
-            query_embed,
             mask_flatten,
+            attn_mask=attn_mask,
             use_checkpoint=use_checkpoint
         )
 
         inter_references_out = inter_references
-        if self.two_stage:
-            return (
-                (
-                    spatial_shapes,
-                    level_start_index,
-                    valid_ratios,
-                    mask_flatten,
-                ),
-                hs,
-                init_reference_out,
-                inter_references_out,
-                memory,
-                query_embed,
-                enc_outputs_class,
-                enc_outputs_coord_unact,
-            )
+
 
         return (
             (
@@ -463,11 +406,12 @@ class DeformableTransformerDecoderLayer(nn.Module):
         src_spatial_shapes,
         level_start_index,
         src_padding_mask=None,
+        self_attn_mask=None
     ):
         # self attention
         q = k = self.with_pos_embed(tgt, query_pos)
         tgt2 = self.self_attn(
-            q.transpose(0, 1), k.transpose(0, 1), tgt.transpose(0, 1)
+            q.transpose(0, 1), k.transpose(0, 1), tgt.transpose(0, 1), attn_mask=self_attn_mask
         )[0].transpose(0, 1)
         tgt = tgt + self.dropout2(tgt2)
         tgt = self.norm2(tgt)
@@ -491,7 +435,7 @@ class DeformableTransformerDecoderLayer(nn.Module):
 
 
 class DeformableTransformerDecoder(nn.Module):
-    def __init__(self, decoder_layer, num_layers, return_intermediate=False):
+    def __init__(self, decoder_layer, num_layers, return_intermediate=False,d_model=256):
         super().__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
         self.num_layers = num_layers
@@ -499,6 +443,12 @@ class DeformableTransformerDecoder(nn.Module):
         # hack implementation for iterative bounding box refinement and two-stage Deformable DETR
         self.bbox_embed = None
         self.class_embed = None
+
+        self.d_model = d_model
+        self.query_scale = MLP(d_model, d_model, d_model, 2)
+        self.ref_point_head = MLP(2 * d_model, d_model, d_model, 2)
+
+
 
     def forward(
         self,
@@ -508,12 +458,12 @@ class DeformableTransformerDecoder(nn.Module):
         src_spatial_shapes,
         src_level_start_index,
         src_valid_ratios,
-        query_pos=None,
         src_padding_mask=None,
+        attn_mask=None,
         use_checkpoint=False,
     ):
         output = tgt
-
+        query_pos=None
         intermediate = []
         intermediate_reference_points = []
         for lid, layer in enumerate(self.layers):
@@ -527,6 +477,11 @@ class DeformableTransformerDecoder(nn.Module):
                 reference_points_input = (
                     reference_points[:, :, None] * src_valid_ratios[:, None]
                 )
+            query_sine_embed = gen_sineembed_for_position(reference_points_input[:, :, 0, :]) # bs, nq, 256*2 
+            raw_query_pos = self.ref_point_head(query_sine_embed) # bs, nq, 256
+            pos_scale = self.query_scale(output) if lid != 0 else 1
+            query_pos = pos_scale * raw_query_pos
+
             if use_checkpoint and self.training:
                 output=ckpt.checkpoint(layer,output,
                 query_pos,
@@ -534,7 +489,8 @@ class DeformableTransformerDecoder(nn.Module):
                 src,
                 src_spatial_shapes,
                 src_level_start_index,
-                src_padding_mask,)
+                src_padding_mask,
+                attn_mask)
             else:
                 output = layer(
                     output,
@@ -544,6 +500,7 @@ class DeformableTransformerDecoder(nn.Module):
                     src_spatial_shapes,
                     src_level_start_index,
                     src_padding_mask,
+                    attn_mask
                 )
 
             # hack implementation for iterative bounding box refinement
@@ -591,3 +548,45 @@ def _inverse_sigmoid(x, eps=1e-5):
     x1 = x.clamp(min=eps)
     x2 = (1 - x).clamp(min=eps)
     return torch.log(x1 / x2)
+
+class MLP(nn.Module):
+    """ Very simple multi-layer perceptron (also called FFN)"""
+
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
+        super().__init__()
+        self.num_layers = num_layers
+        h = [hidden_dim] * (num_layers - 1)
+        self.layers = nn.ModuleList(nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
+
+    def forward(self, x):
+        for i, layer in enumerate(self.layers):
+            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
+        return x
+
+def gen_sineembed_for_position(pos_tensor):
+    # n_query, bs, _ = pos_tensor.size()
+    # sineembed_tensor = torch.zeros(n_query, bs, 256)
+    scale = 2 * math.pi
+    dim_t = torch.arange(128, dtype=torch.float32, device=pos_tensor.device)
+    dim_t = 10000 ** (2 * (dim_t // 2) / 128)
+    x_embed = pos_tensor[:, :, 0] * scale
+    y_embed = pos_tensor[:, :, 1] * scale
+    pos_x = x_embed[:, :, None] / dim_t
+    pos_y = y_embed[:, :, None] / dim_t
+    pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()), dim=3).flatten(2)
+    pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()), dim=3).flatten(2)
+    if pos_tensor.size(-1) == 2:
+        pos = torch.cat((pos_y, pos_x), dim=2)
+    elif pos_tensor.size(-1) == 4:
+        w_embed = pos_tensor[:, :, 2] * scale
+        pos_w = w_embed[:, :, None] / dim_t
+        pos_w = torch.stack((pos_w[:, :, 0::2].sin(), pos_w[:, :, 1::2].cos()), dim=3).flatten(2)
+
+        h_embed = pos_tensor[:, :, 3] * scale
+        pos_h = h_embed[:, :, None] / dim_t
+        pos_h = torch.stack((pos_h[:, :, 0::2].sin(), pos_h[:, :, 1::2].cos()), dim=3).flatten(2)
+
+        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
+    else:
+        raise ValueError("Unknown pos_tensor shape(-1):{}".format(pos_tensor.size(-1)))
+    return pos

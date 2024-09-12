@@ -523,7 +523,7 @@ _C.MODEL.CONV_NEXT.CHECKPOINT_AT=5
 # Person Searcher
 # ---------------------------------------------------------------------------- #
 _C.MODEL.SEARCH = CN(new_allowed=True)  # for compatibility
-_C.DETECTOR = CN()
+_C.DETECTOR = CN(new_allowed=True)
 _C.DETECTOR.NUM_CLASSES = 1
 _C.DETECTOR.MODEL = CN(new_allowed=True)
 

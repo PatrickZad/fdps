@@ -202,7 +202,7 @@ class Trainer(DefaultTrainer):
     def build_optimizer(cls, cfg, model):
         from psd2.solver.build import maybe_add_gradient_clipping
         import re
-
+        n_params=0
         logger = logging.getLogger("psd2.trainer")
         frozen_params = []
         learn_param_keys = []
@@ -222,6 +222,7 @@ class Trainer(DefaultTrainer):
             return match_idx
 
         for key, value in model.named_parameters(recurse=True):
+            n_params+=value.numel()
             match_freeze = _find_match(key, freeze_regex)
             if match_freeze > -1:
                 value.requires_grad = False
@@ -236,6 +237,7 @@ class Trainer(DefaultTrainer):
             learn_param_keys.append(key)
         logger.info("Frozen parameters:\n{}".format("\n".join(frozen_params)))
         logger.info("Training parameters:\n{}".format("\n".join(learn_param_keys)))
+        logger.info("Number of parameters: \n{}".format(n_params))
         return maybe_add_gradient_clipping(cfg, torch.optim.SGD)(
             param_groups,
             lr=cfg.SOLVER.BASE_LR,

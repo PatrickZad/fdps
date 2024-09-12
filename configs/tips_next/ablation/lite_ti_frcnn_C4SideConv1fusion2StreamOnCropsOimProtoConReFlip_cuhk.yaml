@@ -1,6 +1,7 @@
-_BASE_: "./ti_frcnn_C4Side_cuhk_llr_16-8.yaml"
+_BASE_: "../frcnn/lite_ti_frcnn_C4Side_cuhk_16-8_gem_dnboxa.yaml"
 MODEL:
-  WEIGHTS: "outputs/tips/cuhk_tircnn_16x8_h50/model_0037799.pth"
+  META_ARCHITECTURE: "TiRCNN_C4HalfSide2StreamOnCropsOimProtoConReFlip"
+  WEIGHTS: "outputs/tips/lite_det/cuhk_tircnn_16x8_h50/model_0037799.pth"
   BACKBONE:
     NAME: "build_resnet_backbone_half"
     FREEZE_AT: 2
@@ -12,7 +13,6 @@ MODEL:
     SMOOTH_L1_BETA: 1.0
 REID_HEAD:
   POOL_LAYER: "gempoolP"
-  TRAIN_WITH_DET: False
   USE_CHECKPOINT: True
   BOX_AUGMENTATION:
     ENABLE: True
@@ -32,4 +32,5 @@ SOLVER:
   WARMUP_ITERS: 2242
 TEST:
   EVAL_PERIOD: 2242
-OUTPUT_DIR: "outputs/tips/lite_side/lite_tircnn-c4side_16-8_cuhk_1llr_10e_gem_dnboxa-8"
+VIS_PERIOD: -1
+OUTPUT_DIR: "outputs/tips_next/lite_tircnn-c4halfside2streamOnCropOimProtoConReFlip_16-8_cuhk_1llr_10e_gem"

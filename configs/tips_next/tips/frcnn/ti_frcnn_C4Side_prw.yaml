@@ -1,4 +1,4 @@
-_BASE_: "./ti_frcnn_baseline.yaml"
+_BASE_: "../../../ti_frcnn_baseline.yaml"
 MODEL:
   META_ARCHITECTURE: "TiRCNN_C4Side"
   WEIGHTS: "outputs/tips/prw_tircnn/model_final.pth"

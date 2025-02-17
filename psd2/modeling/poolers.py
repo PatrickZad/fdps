@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from torchvision.ops import RoIPool
 
-from psd2.layers import ROIAlign, ROIAlignRotated, cat, nonzero_tuple
+from psd2.layers import ROIAlign,  cat, nonzero_tuple # ROIAlignRotated,
 from psd2.structures import Boxes
 
 try:

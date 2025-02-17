@@ -10,7 +10,7 @@ from .cuhk_sysu import subset_names as cuhk_subsets
 from .prw import load_prw
 from .prw import subsets as prw_subsets
 from .ptk21 import load_ptk21
-from .coco_ch import load_coco_ch
+# from .coco_ch import load_coco_ch
 import copy
 
 # TODO change evaluator type to "query"

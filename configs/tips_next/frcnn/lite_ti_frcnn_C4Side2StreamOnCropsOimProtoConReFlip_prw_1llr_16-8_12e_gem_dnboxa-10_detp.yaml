@@ -1,9 +1,9 @@
 _BASE_: "../tips/frcnn/ti_frcnn_C4Side_prw_llr_16-8.yaml"
 MODEL:
   META_ARCHITECTURE: "TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip"
-  WEIGHTS: "outputs/tips/lite_det/prw_tircnn_16x8_m50/model_0012103.pth"
+  WEIGHTS: "outputs/tips/lite_det/prw_tircnn_16x8_h50/model_0019223.pth"
   BACKBONE:
-    NAME: "build_resnet_backbone_minor"
+    NAME: "build_resnet_backbone_half"
     FREEZE_AT: 2
   ROI_HEADS:
     NAME: "Res5HalfROIHeads"
@@ -13,10 +13,10 @@ MODEL:
     SMOOTH_L1_BETA: 1.0
 REID_HEAD:
   POOL_LAYER: "gempoolP"
-  TRAIN_WITH_DET: False
+  TRAIN_WITH_DET: True
   USE_CHECKPOINT: True
   BOX_AUGMENTATION:
-    ENABLE: True
+    ENABLE: False
     NAME: "dn_detr"
     H_CENTER: 0.4
     H_SCALE: 0.2
@@ -33,4 +33,4 @@ SOLVER:
   WARMUP_ITERS: 1141
 TEST:
   EVAL_PERIOD: 1141
-OUTPUT_DIR: "outputs/tips/lite_side/minor_tircnn-c4side2streamOnCropOimProtoConReFlip_16-8_prw_1llr_12e_gem_dnboxa-10"
+OUTPUT_DIR: "outputs/tips/lite_side/lite_tircnn-c4side2streamOnCropOimProtoConReFlip_16-8_prw_1llr_12e_gem_dnboxa-10_detp_test"

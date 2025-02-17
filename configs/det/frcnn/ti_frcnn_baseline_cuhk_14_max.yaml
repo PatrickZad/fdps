@@ -1,0 +1,15 @@
+_BASE_: "./ti_frcnn_baseline_cuhk.yaml"
+MODEL:
+  RPN:
+    POST_NMS_TOPK_TEST: 1000
+  ROI_HEADS:
+    BATCH_SIZE_PER_IMAGE: 512
+    POSITIVE_FRACTION: 0.25
+  ROI_BOX_HEAD:
+      POOLER_RESOLUTION: [14, 14]
+INPUT:
+  MIN_SIZE_TRAIN: (800,)
+  MAX_SIZE_TRAIN: 1333
+SOLVER:
+  IMS_PER_BATCH: 16
+OUTPUT_DIR: "outputs/tips/cuhk_tircnn_14_max"

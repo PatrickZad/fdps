@@ -823,7 +823,20 @@ class TiDDETR_JointDc_C4Side2StreamOnCropsOimProtoConReFlip(TiDDETR_JointDc_C4Si
         return torch.stack(crops)
 
 
-
+@META_ARCH_REGISTRY.register()
+class TiDnDabDDETR_JointDc_C4Side2StreamOnCropsOimProtoConReFlip(TiDDETR_JointDc_C4Side2StreamOnCropsOimProtoConReFlip):
+    @classmethod
+    def from_config(cls, cfg):
+        ret = super().from_config(cfg)
+        ret["det_head"]=DnDabDDetrDetHead(cfg,ret["backbone"].output_shape())
+        return ret
+@META_ARCH_REGISTRY.register()
+class TiDabDDETR_JointDc_C4Side2StreamOnCropsOimProtoConReFlip(TiDDETR_JointDc_C4Side2StreamOnCropsOimProtoConReFlip):
+    @classmethod
+    def from_config(cls, cfg):
+        ret = super().from_config(cfg)
+        ret["det_head"]=DabDDetrDetHead(cfg,ret["backbone"].output_shape())
+        return ret
 
 from psd2.layers.metric_loss import TripletLoss
 @META_ARCH_REGISTRY.register()

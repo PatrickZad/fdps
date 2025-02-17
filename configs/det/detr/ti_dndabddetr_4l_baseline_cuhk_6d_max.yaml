@@ -1,0 +1,44 @@
+_BASE_: "./ti_ddetr_baseline.yaml"
+MODEL:
+  META_ARCHITECTURE: "DabDDETR_Baseline"
+  BACKBONE:
+    NAME: "build_resnet_backbone"
+    FREEZE_AT: 2
+  RESNETS:
+    OUT_FEATURES: ["res3","res4","res5"]
+    CHECKPOINT_AT: 6
+DETECTOR:
+  MODEL:
+    IN_FEATS: ["res3","res4","res5"]
+    NUM_FEAT_LEVELS: 4
+    USE_CHECKPOINT: False  
+    D_TRANSFORMER:
+      DEC_DEPTH: 6
+      DIM_FEEDFORWARD: 2048
+      DROPOUT: 0.0
+  DN_DETR:
+    SCALAR: 5
+    LABEL_NOISE_SCALE: 0.2
+    BOX_NOISE_SCALE: 0.4
+INPUT:
+  MIN_SIZE_TRAIN: (800,)
+  MAX_SIZE_TRAIN: 1333
+DATASETS:
+  TRAIN: ("CUHK-SYSU_Train",) 
+  TEST: ("CUHK-SYSU_Gallery", ) #
+SOLVER:
+  MAX_ITER: 67200 # 700 * 100+1
+  STEPS: (44800,)
+  CHECKPOINT_PERIOD: 2240
+  WARMUP_ITERS: 2240
+  IMS_PER_BATCH: 16
+  LR_FACTORS: [0.1,]
+  LR_GROUP_REGEX: ["backbone.+",]
+  CLIP_GRADIENTS:
+    ENABLED: True
+    CLIP_TYPE: "norm"
+    NORM_TYPE: 2.0
+    CLIP_VALUE: 0.1
+TEST:
+  EVAL_PERIOD: 2240
+OUTPUT_DIR: "outputs/tips_next/cuhk_dndabddetr_4l_6d_max"

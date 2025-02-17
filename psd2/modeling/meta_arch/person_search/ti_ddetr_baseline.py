@@ -1020,6 +1020,104 @@ class MLP(nn.Module):
             x = tF.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
         return x
 
+@META_ARCH_REGISTRY.register()
+class DDETR_C4Side_JointDc(DDETR_Baseline_JointDc,DDETR_C4Side):
+    @configurable
+    def __init__(self, bn_neck, side_init, **kwargs) -> None:
+        super(DDETR_C4Side,self).__init__(**kwargs)
+
+        self.side_init = side_init
+        self.alpha_res3 = nn.Parameter(torch.tensor(0.0))
+        self.alpha_res4 = nn.Parameter(torch.tensor(0.0))
+        # side reid network
+        self.bn_neck = bn_neck
+        self.side_res3 = nn.Sequential(
+            *ResNet.make_stage(
+                **{
+                    "num_blocks": 4,
+                    "stride_per_block": [2, 1, 1, 1],
+                    "in_channels": 256,
+                    "out_channels": 512,
+                    "norm": "BN",
+                    "bottleneck_channels": 128,
+                    "stride_in_1x1": False,
+                    "dilation": 1,
+                    "num_groups": 1,
+                    "block_class": BottleneckBlock,
+                }
+            )
+        )
+        self.side_res4 = nn.Sequential(
+            *ResNet.make_stage(
+                **{
+                    "num_blocks": 6,
+                    "stride_per_block": [2, 1, 1, 1, 1, 1],
+                    "in_channels": 512,
+                    "out_channels": 1024,
+                    "norm": "BN",
+                    "bottleneck_channels": 256,
+                    "stride_in_1x1": False,
+                    "dilation": 1,
+                    "num_groups": 1,
+                    "block_class": BottleneckBlock,
+                }
+            )
+        )
+        self.side_res5 = nn.Sequential(
+            *ResNet.make_stage(
+                **{
+                    "num_blocks": 3,
+                    "stride_per_block": [1, 1, 1],
+                    "in_channels": 1024,
+                    "out_channels": 2048,
+                    "norm": "BN",
+                    "bottleneck_channels": 512,
+                    "stride_in_1x1": False,
+                    "dilation": 1,
+                    "num_groups": 1,
+                    "block_class": BottleneckBlock,
+                }
+            )
+        )
+
+    def get_reid_backbone_features(self, det_backbone_features, image_list):
+        del image_list
+        reid_res3_feat = (
+            checkpoint.checkpoint(self.side_res3, det_backbone_features["res2"].detach())
+            if self.use_checkpoint
+            else self.side_res3(det_backbone_features["res2"].detach())
+        )
+        alpha = torch.sigmoid(self.alpha_res3)
+        reid_res3_feat = (
+            alpha * det_backbone_features["res3"].detach() + (1 - alpha) * reid_res3_feat
+        )
+        reid_res4_feat = (
+            checkpoint.checkpoint(self.side_res4, reid_res3_feat)
+            if self.use_checkpoint
+            else self.side_res4(reid_res3_feat)
+        )
+        del reid_res3_feat
+        alpha = torch.sigmoid(self.alpha_res4)
+        reid_res4_feat = (
+            alpha * det_backbone_features["res4"].detach() + (1 - alpha) * reid_res4_feat
+        )
+        return reid_res4_feat
+    
+@META_ARCH_REGISTRY.register()
+class DnDabDDETR_C4Side_JointDc(DDETR_C4Side_JointDc):
+    @classmethod
+    def from_config(cls, cfg):
+        ret = super().from_config(cfg)
+        ret["det_head"]=DnDabDDetrDetHead(cfg,ret["backbone"].output_shape())
+        return ret
+@META_ARCH_REGISTRY.register()
+class DabDDETR_C4Side_JointDc(DDETR_C4Side_JointDc):
+    @classmethod
+    def from_config(cls, cfg):
+        ret = super().from_config(cfg)
+        ret["det_head"]=DabDDetrDetHead(cfg,ret["backbone"].output_shape())
+        return ret
+
 
 def _inverse_sigmoid(x, eps=1e-5):
     x = x.clamp(min=0, max=1)

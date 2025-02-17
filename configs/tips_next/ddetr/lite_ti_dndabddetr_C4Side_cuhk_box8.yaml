@@ -2,6 +2,11 @@ _BASE_: "./ti_ddetr_C4Side_cuhk.yaml"
 MODEL:
   META_ARCHITECTURE: "DabDDETR_C4Side"
   WEIGHTS: "outputs/tips_next/cuhk_dabddetr_4l_h50_6d/model_0044799.pth"
+DETECTOR:
+  MODEL:
+    D_TRANSFORMER:
+      DIM_FEEDFORWARD: 2048
+      DROPOUT: 0.0
 REID_HEAD:
   BOX_AUGMENTATION:
     ENABLE: True

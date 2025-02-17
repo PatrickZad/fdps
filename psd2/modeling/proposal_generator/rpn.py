@@ -502,8 +502,12 @@ class RPN(nn.Module):
             )
         else:
             losses = {}
+        if isinstance(images,torch.Tensor):
+            img_sizes=torch.tensor([(im.shape[-2], im.shape[-1]) for im in images],dtype=torch.long,device=images.device)
+        else:
+            img_sizes=images.image_sizes
         proposals = self.predict_proposals(
-            anchors, pred_objectness_logits, pred_anchor_deltas, images.image_sizes
+            anchors, pred_objectness_logits, pred_anchor_deltas, img_sizes
         )
         return proposals, losses
 

@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from .config import CfgNode as CN
+from copy import deepcopy
 
 # NOTE: given the new config system
 # (https://detectron2.readthedocs.io/en/latest/tutorials/lazyconfigs.html),
@@ -637,6 +638,8 @@ _C.SOLVER.LR_GROUP_REGEX = []
 # custom freeze
 _C.SOLVER.FREEZE_PARAM_REGEX = []
 
+_C.SOLVER2 = deepcopy(_C.SOLVER)
+_C.SOLVER2.KEY_REGEX=[]
 # ---------------------------------------------------------------------------- #
 # Specific test options
 # ---------------------------------------------------------------------------- #

@@ -1,7 +1,7 @@
-_BASE_: "./ti_frcnn_C4Side_prw_llr_16-8.yaml"
+_BASE_: "../tips/frcnn/ti_frcnn_C4Side_prw_llr_16-8.yaml"
 MODEL:
   META_ARCHITECTURE: "TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip"
-  WEIGHTS: "outputs/tips/prw_tircnn_16x8_h50/model_0019223.pth"
+  WEIGHTS: "outputs/tips/lite_det/prw_tircnn_16x8_h50/model_0019223.pth"
   BACKBONE:
     NAME: "build_resnet_backbone_half"
     FREEZE_AT: 2
@@ -33,4 +33,4 @@ SOLVER:
   WARMUP_ITERS: 1141
 TEST:
   EVAL_PERIOD: 1141
-OUTPUT_DIR: "outputs/tips/lite_side/lite_tircnn-c4side2streamOnCropOimProtoConReFlip_16-8_prw_1llr_12e_gem_dnboxa-10"
+OUTPUT_DIR: "outputs/tips/lite_side/lite_tircnn-c4side2streamOnCropOimProtoConReFlip_16-8_prw_1llr_12e_gem_dnboxa-10_test"

@@ -1,4 +1,4 @@
-import imp
+# import imp
 from .roi_fc_head import RoiFcHead
 from .roi_coseg_head import RoiCoSegHead
 from .msroi_fc_head import MsRoiFcHead, MsRoiFcHeadSide

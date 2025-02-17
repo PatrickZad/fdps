@@ -1,4 +1,4 @@
-_BASE_: "../tips/frcnn//ti_frcnn_C4Side_cuhk_llr_16-8.yaml"
+_BASE_: "../tips/frcnn/ti_frcnn_C4Side_cuhk_llr_16-8.yaml"
 MODEL:
   META_ARCHITECTURE: "TiRCNN_C4Side2StreamOnCropsOimProtoConReFlip"
   WEIGHTS: "outputs/tips/lite_det/cuhk_tircnn_16x8_h50/model_0037799.pth"
@@ -13,10 +13,10 @@ MODEL:
     SMOOTH_L1_BETA: 1.0
 REID_HEAD:
   POOL_LAYER: "gempoolP"
-  TRAIN_WITH_DET: False
+  TRAIN_WITH_DET: True
   USE_CHECKPOINT: True
   BOX_AUGMENTATION:
-    ENABLE: True
+    ENABLE: False
     NAME: "dn_detr"
     H_CENTER: 0.4
     H_SCALE: 0.2

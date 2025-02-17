@@ -1,0 +1,14 @@
+_BASE_: "../frcnn/lite_ti_frcnn_C4Side_cuhk_16-8_gem_dnboxa.yaml"
+MODEL:
+  META_ARCHITECTURE: "TiRCNN_2s_CnBaseline"
+  WEIGHTS: "outputs/tips/v1/cuhk_tircnn_16x8/model_0033599.pth"
+  BACKBONE:
+    NAME: "build_resnet_backbone"
+  ROI_HEADS:
+    NAME: "Res5ROIHeads"
+REID_HEAD:
+  INIT_WEIGHT: "Data/model_best_cuhk_cn.pth"
+CWS: True
+TEST:
+  IMS_PER_PROC: 1
+OUTPUT_DIR: "outputs/tips_next/2s_frcnn_cn_cuhk"

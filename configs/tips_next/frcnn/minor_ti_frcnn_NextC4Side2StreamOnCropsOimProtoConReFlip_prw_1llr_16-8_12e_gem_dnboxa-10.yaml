@@ -1,7 +1,7 @@
-_BASE_: "./ti_frcnn_C4Side_prw_llr_16-8.yaml"
+_BASE_: "../tips/frcnn/ti_frcnn_C4Side_prw_llr_16-8.yaml"
 MODEL:
   META_ARCHITECTURE: "TiRCNN_NextC4Side2StreamOnCropsOimProtoConReFlip"
-  WEIGHTS: "outputs/tips/lite_side/prw_tircnn_next_minor_16x8/model_0015663.pth"
+  WEIGHTS: "outputs/tips/lite_det/prw_tircnn_next_minor_16x8/model_0015663.pth"
   BACKBONE:
     NAME: "convnext_tiny_minor"
     FREEZE_AT: 1

@@ -401,6 +401,8 @@ class TiRCNN_Baseline(GeneralizedRCNN):
                     gti.gt_classes[cur_pids > 0] -= 2
                 return self.forward_ps(det_pred, det_bk_features, images, gt_instances)
         else:
+            if isinstance(input_list,torch.Tensor):
+                return self.forward_img(input_list)
             if self.train_task == "det":
                 images, gt_instances = self.preprocess_input(input_list)
                 det_bk_features = self.backbone(images.tensor)
@@ -630,6 +632,31 @@ class TiRCNN_Baseline(GeneralizedRCNN):
             cat_assigns_on_boxes = torch.cat(assigns_on_boxes, dim=2)
             storage.put_image("img_{}/attn".format(bi), cat_assigns_on_boxes / 255.0)
 
+    def forward_img(self,images):
+        # NOTE only for inference
+            if self.train_task == "det":
+                det_bk_features = self.backbone(images)
+                det_pred = self.forward_det(
+                    images, det_bk_features, None
+                )  # det eval only
+                return det_pred
+            det_bk_features = self.backbone(images)
+            # print("det backbone time: {}".format(time.time()-t0))
+            det_pred = self.forward_det(images, det_bk_features, None)
+            reid_feats = self.forward_ps(
+                det_pred, det_bk_features, images, None
+            )
+            del det_bk_features
+            outputs = {"pred_boxes": [], "pred_scores": [], "reid_feats": []}
+            for pi, pfeats in enumerate(reid_feats):
+                boxes = det_pred["pred_boxes"][pi]
+                org_boxes = boxes
+                scores = det_pred["pred_scores"][pi]
+                outputs["pred_boxes"].append(org_boxes)
+                outputs["pred_scores"].append(scores)
+                outputs["reid_feats"].append(pfeats)
+            return outputs
+
 @META_ARCH_REGISTRY.register()
 class TiRCNN_Baseline_JointDc(TiRCNN_Baseline):
     def get_ps_pos_samples(self,gts):
@@ -777,6 +804,101 @@ class TiRCNN_Baseline_JointDc(TiRCNN_Baseline):
                 outputs["pred_scores"].append(scores)
                 outputs["reid_feats"].append(pfeats)
             return outputs
+
+@META_ARCH_REGISTRY.register()
+class TiRCNN_2s_Baseline(TiRCNN_Baseline):
+    @configurable
+    def __init__(self, side_init, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.side_init = side_init
+    @classmethod
+    def from_config(cls, cfg):
+        res = super().from_config(cfg)
+        res["side_init"] = cfg.REID_HEAD.INIT_WEIGHT
+        return res
+    def load_state_dict(self, *args, **kws):
+        output = super().load_state_dict(*args, **kws)
+        assert self.side_init != ""
+        state_dict = _load_file(self.side_init)
+        if "model" in state_dict:
+            state_dict = state_dict["model"]
+        ret=self.reid_baseline.load_state_dict(state_dict,strict=False)
+        print(ret)
+        return output
+    def forward_ps(self, det_pred, det_backbone_features, image_list, gts):
+        assert not self.training
+        num_boxes_per_image = [bi.shape[0] for bi in det_pred["pred_boxes"]]
+        tgt_size=(256,128)
+        crops=[]
+        for bi,boxesi in enumerate(det_pred["pred_boxes"]):
+            if isinstance(image_list,torch.Tensor):
+                imgi=image_list[bi]
+            else:
+                imgi=image_list.tensor[bi]
+            h,w=imgi.shape[-2:]
+            xmin, ymin, xmax, ymax = boxesi.unbind(1)
+            xmin = xmin.clamp(0,w-1).int()
+            xmax = xmax.clamp(1,w).ceil().int()
+            ymin = ymin.clamp(0,h-1).int()
+            ymax = ymax.clamp(1,h).ceil().int()
+            cropsi = []
+            for x1,y1,x2,y2 in zip(xmin,ymin,xmax,ymax):
+                crop_0=imgi[:,y1:y2,x1:x2].clone() # scale org
+                # convert norm
+                crop_0=crop_0*self.pixel_std+self.pixel_mean
+                crop_0=crop_0*255
+                crop_0=torch.nn.functional.interpolate(crop_0[None], size=tgt_size, mode='bilinear', align_corners=False)[0]
+                cropsi.append(crop_0)
+            crops.extend(cropsi)
+        crops=torch.stack(crops)
+        p_embs = self.reid_baseline(crops)
+        p_embs=tF.normalize(p_embs,dim=-1)
+        if self.cws:
+            cat_scores = torch.cat(det_pred["pred_scores"], dim=0)
+            p_embs *= cat_scores
+        p_embs = torch.split(p_embs, num_boxes_per_image)
+        return p_embs
+    def inf_query(self, input_list):
+        images, gt_instances = self.preprocess_input(qd["query"] for qd in input_list)
+        q_boxes = [gti.gt_boxes.tensor for gti in gt_instances]
+        tgt_size=(256,128)
+        crops=[]
+        for bi,boxesi in enumerate(q_boxes):
+            imgi=images.tensor[bi]
+            h,w=imgi.shape[-2:]
+            xmin, ymin, xmax, ymax = boxesi.unbind(1)
+            xmin = xmin.clamp(0,w-1).int()
+            xmax = xmax.clamp(1,w).ceil().int()
+            ymin = ymin.clamp(0,h-1).int()
+            ymax = ymax.clamp(1,h).ceil().int()
+            cropsi = []
+            for x1,y1,x2,y2 in zip(xmin,ymin,xmax,ymax):
+                crop_0=imgi[:,y1:y2,x1:x2].clone() # scale org
+                # convert norm
+                crop_0=crop_0*self.pixel_std+self.pixel_mean
+                crop_0=crop_0*255
+                crop_0=torch.nn.functional.interpolate(crop_0[None], size=tgt_size, mode='bilinear', align_corners=False)[0]
+                cropsi.append(crop_0)
+            crops.extend(cropsi)
+        crops=torch.stack(crops)
+        q_embs = self.reid_baseline(crops)
+        q_embs=tF.normalize(q_embs,dim=-1)
+        for bi, feat in enumerate(q_embs):
+            input_list[bi]["query"]["feat"] = feat
+        return input_list
+from psd2.modeling.reid_wrapper import ReidBaseline
+@META_ARCH_REGISTRY.register()
+class TiRCNN_2s_RnBaseline(TiRCNN_2s_Baseline):
+    @configurable
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args,**kwargs)
+        self.reid_baseline=ReidBaseline("R50")
+@META_ARCH_REGISTRY.register()
+class TiRCNN_2s_CnBaseline(TiRCNN_2s_Baseline):
+    @configurable
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args,**kwargs)
+        self.reid_baseline=ReidBaseline("CNT")
 
 @META_ARCH_REGISTRY.register()
 class TiRCNN_NextBaseline(TiRCNN_Baseline):

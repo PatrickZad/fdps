@@ -1315,7 +1315,7 @@ class DDetrDetHead(nn.Module):
             return pred_instances,loss_dict
         else:
             return pred_instances,{}
-from psd2.layers.deform_conv import DeformConvPack
+# from psd2.layers.deform_conv import DeformConvPack
 class DDDetrDetHead(DDetrDetHead):
     @configurable
     def __init__(self,*args,**kws ) -> None:

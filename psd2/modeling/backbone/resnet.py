@@ -8,8 +8,8 @@ from torch import nn
 from psd2.layers import (
     CNNBlockBase,
     Conv2d,
-    DeformConv,
-    ModulatedDeformConv,
+    #DeformConv,
+    #ModulatedDeformConv,
     ShapeSpec,
     get_norm,
 )

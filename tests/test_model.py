@@ -3,25 +3,25 @@ import sys
 sys.path.append("./")
 import fire
 import torch
-from psd2.checkpoint import DetectionCheckpointer as Checkpointer
-from psd2.config import get_cfg
-from psd2.modeling import build_model
-from psd2.utils.events import EventStorage, TensorboardXWriter, get_event_storage
-from psd2.utils.logger import setup_logger
+from fdps.checkpoint import DetectionCheckpointer as Checkpointer
+from fdps.config import get_cfg
+from fdps.modeling import build_model
+from fdps.utils.events import EventStorage, TensorboardXWriter, get_event_storage
+from fdps.utils.logger import setup_logger
 import os
 
 
 def build_train_loader(cfg):
-    from psd2.data.catalog import MapperCatalog
-    from psd2.data.build import build_detection_train_loader
+    from fdps.data.catalog import MapperCatalog
+    from fdps.data.build import build_detection_train_loader
 
     mapper = MapperCatalog.get(cfg.DATASETS.TRAIN[0])(cfg, True)
     return build_detection_train_loader(cfg, mapper=mapper)
 
 
 def build_test_loader(cfg, dataset_name):
-    from psd2.data.catalog import MapperCatalog
-    from psd2.data.build import build_detection_test_loader
+    from fdps.data.catalog import MapperCatalog
+    from fdps.data.build import build_detection_test_loader
 
     mapper = MapperCatalog.get(dataset_name)(cfg, False)
     return build_detection_test_loader(cfg, dataset_name, mapper=mapper)

@@ -1,5 +1,0 @@
-_BASE_: "./ti_ddetr_C4Side_prw.yaml"
-MODEL:
-  META_ARCHITECTURE: "TiDDETR_C4Side2StreamOnCropsOimProtoConReFlip"
-  WEIGHTS: "outputs/tips_next/prw_ddetr_4l_h50_6d_gclip/model_0016279.pth"
-OUTPUT_DIR: "outputs/tips_next/lite_tiddetr-c4side2streamOnCropOimProtoConReFlip_prw"

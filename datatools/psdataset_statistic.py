@@ -4,10 +4,10 @@ import numpy as np
 
 sys.path.append("./")
 import fire
-from psd2.config import get_cfg
-from psd2.data.build import get_detection_dataset_dicts
+from fdps.config import get_cfg
+from fdps.data.build import get_detection_dataset_dicts
 
-from psd2.utils.logger import setup_logger
+from fdps.utils.logger import setup_logger
 
 import os
 

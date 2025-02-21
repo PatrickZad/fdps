@@ -1,0 +1,17 @@
+_BASE_: "./frcnn_det_base.yaml"
+MODEL:
+  BACKBONE:
+    NAME: "build_resnet_backbone_lite"
+  ROI_HEADS:
+    NAME: "Res5HalfROIHeads"
+SOLVER:
+  MAX_ITER: 17113 # 713 * 24+1
+  STEPS: (8556,)
+  CHECKPOINT_PERIOD: 1426
+  WARMUP_ITERS: 713
+DATASETS:
+  TRAIN: ("PRW_Train",) 
+  TEST: ("PRW_Gallery", ) #
+TEST:
+  EVAL_PERIOD: 1426
+OUTPUT_DIR: "outputs/tips_next/frcnn_det_prw_rn_lite"

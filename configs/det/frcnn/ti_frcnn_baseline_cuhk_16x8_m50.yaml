@@ -1,9 +1,0 @@
-_BASE_: "./ti_frcnn_baseline_cuhk_h50.yaml"
-MODEL:
-  BACKBONE:
-    NAME: "build_resnet_backbone_minor"
-  ROI_HEADS:
-    NAME: "Res5MinorROIHeads"
-  ROI_BOX_HEAD:
-      POOLER_RESOLUTION: [16, 8]
-OUTPUT_DIR: "outputs/tips/cuhk_tircnn_16x8_m50_re"

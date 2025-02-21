@@ -1,0 +1,29 @@
+_BASE_: "./frcnn_det_base.yaml"
+MODEL:
+  META_ARCHITECTURE: "TipsRcnnCnBase"
+  WEIGHTS: ""
+  BACKBONE:
+    NAME: "convnext_tiny_minor"
+    FREEZE_AT: 1
+  CONV_NEXT:
+    OUT_FEATURES: ["stage3_unorm"]
+    LAST_STRIDE: True
+    PRETRAINED: True
+    IN_22K: True
+    CHECKPOINT_AT: 3
+  RPN:
+    IN_FEATURES: ["stage3_unorm"]
+  ROI_HEADS:
+    IN_FEATURES: ["stage3_unorm"]
+DATASETS:
+  TRAIN: ("PRW_Train",) 
+  TEST: ("PRW_Gallery", ) #
+SOLVER:
+  MAX_ITER: 21361 # 356 * 60+1
+  STEPS: (8544,17088)
+  CHECKPOINT_PERIOD: 712
+  WARMUP_ITERS: 712
+  IMS_PER_BATCH: 16
+TEST:
+  EVAL_PERIOD: 712
+OUTPUT_DIR: "outputs/tips_next/frcnn_det_prw_cn_minor"

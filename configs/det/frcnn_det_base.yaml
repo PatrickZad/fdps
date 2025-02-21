@@ -1,0 +1,13 @@
+_BASE_: "../../frcnn_baseline.yaml"
+MODEL:
+  ROI_HEADS:
+    IOU_THRESHOLDS: [0.5,]
+    IOU_LABELS: [0, 1]
+  ROI_BOX_HEAD:
+    SMOOTH_L1_BETA: 1.0
+    POOLER_RESOLUTION: [16, 8]
+REID_HEAD:
+  TRAIN_REID: False
+SOLVER:
+  IMS_PER_BATCH: 8
+

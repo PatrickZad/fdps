@@ -1,0 +1,21 @@
+_BASE_: "../frcnn_base.yaml"
+MODEL:
+  META_ARCHITECTURE: "TipsRcnnRn"
+  WEIGHTS: ""
+  RESNETS:
+    OUT_FEATURES: ["res2","res3","res4"]
+REID_HEAD:
+  INIT_WEIGHT: "Data/model_zoo/tvR-50.pkl"
+  TRAIN_WITH_DET: False
+  USE_CHECKPOINT: True
+  BOX_AUGMENTATION:
+    ENABLE: True
+    NAME: "dn_detr"
+    H_CENTER: 0.4
+    H_SCALE: 0.2
+    NUM_LABELED: 4
+    APPEND_GT: True
+    NUM_UNLABLED: 4
+  ROI_POOLER:
+    POOLER_RESOLUTION: [16,8]
+CWS: True

@@ -1,0 +1,26 @@
+_BASE_: "./frcnn_tips_base.yaml"
+MODEL:
+  META_ARCHITECTURE: "TipsRcnnRnOrd"
+  WEIGHTS: "outputs/tips_next/frcnn_det_prw_rn_minor/model_final.pth"
+  BACKBONE:
+    NAME: "build_resnet_backbone_minor"
+  ROI_HEADS:
+    NAME: "Res5HalfROIHeads"
+REID_HEAD:
+  LOSS:
+    OIM:
+      LUT_LEN: 483
+      QUEUE_LEN: 500
+SOLVER:
+  MAX_ITER: 34231 # 1141 * 30 +1
+  STEPS: (13692,) # 
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 5
+  CHECKPOINT_PERIOD: 1141
+  WARMUP_ITERS: 1141
+DATASETS:
+  TRAIN: ("PRW_Train",) 
+  TEST: ( "PRW_Gallery","PRW_InfQ",) #
+TEST:
+  EVAL_PERIOD: 1141
+OUTPUT_DIR: "outputs/tips_next/tips_minor_rn_prw"

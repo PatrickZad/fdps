@@ -4,17 +4,17 @@ import numpy as np
 
 sys.path.append("./")
 import fire
-from psd2.config import get_cfg
-from psd2.data.build import get_detection_dataset_dicts
-from psd2.data.catalog import MapperCatalog
+from fdps.config import get_cfg
+from fdps.data.build import get_detection_dataset_dicts
+from fdps.data.catalog import MapperCatalog
 
-from psd2.utils.visualizer import Visualizer
-from psd2.utils.logger import setup_logger
+from fdps.utils.visualizer import Visualizer
+from fdps.utils.logger import setup_logger
 from PIL import Image
 import os
 import torch
 import torchvision.transforms.functional as tvF
-from psd2.structures.boxes import BoxMode
+from fdps.structures.boxes import BoxMode
 
 
 def setup_cfg(config_file):

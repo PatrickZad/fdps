@@ -1,7 +1,0 @@
-_BASE_: "../../ti_ddetr_baseline.yaml"
-REID_HEAD:
-  TRAIN_REID: False
-SOLVER:
-  IMS_PER_BATCH: 8
-  BASE_LR: 1e-4
-

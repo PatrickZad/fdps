@@ -1,6 +1,0 @@
-_BASE_: "../../ti_frcnn_baseline.yaml"
-REID_HEAD:
-  TRAIN_REID: False
-SOLVER:
-  IMS_PER_BATCH: 8
-

@@ -1,0 +1,29 @@
+_BASE_: "./frcnn_det_base.yaml"
+MODEL:
+  META_ARCHITECTURE: "TipsRcnnCnBase"
+  WEIGHTS: ""
+  BACKBONE:
+    NAME: "convnext_tiny_half"
+    FREEZE_AT: 1
+  CONV_NEXT:
+    OUT_FEATURES: ["stage3_unorm"]
+    LAST_STRIDE: True
+    PRETRAINED: True
+    IN_22K: True
+    CHECKPOINT_AT: 3
+  RPN:
+    IN_FEATURES: ["stage3_unorm"]
+  ROI_HEADS:
+    IN_FEATURES: ["stage3_unorm"]
+DATASETS:
+  TRAIN: ("CUHK-SYSU_Train",) 
+  TEST: ("CUHK-SYSU_Gallery", ) #
+SOLVER:
+  MAX_ITER: 42001 # 700 * 60+1
+  STEPS: (16800,33600)
+  CHECKPOINT_PERIOD: 1400
+  WARMUP_ITERS: 1400
+  IMS_PER_BATCH: 16
+TEST:
+  EVAL_PERIOD: 1400
+OUTPUT_DIR: "outputs/tips_next/frcnn_det_cuhk_cn_lite"

@@ -1,0 +1,13 @@
+from .mapper import SearchMapper, SearchMapperInfQuery
+
+
+class CuhksysuMapper(SearchMapper):
+    def __init__(self, cfg, is_train) -> None:
+        super().__init__(cfg, is_train)
+
+
+class CuhkSearchMapperInfQuery(SearchMapperInfQuery):
+    def __init__(self, cfg, is_train) -> None:
+        super().__init__(cfg, is_train)
+
+
